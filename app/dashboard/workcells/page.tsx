@@ -55,9 +55,11 @@ import {
   TooltipProvider 
 } from '@/components/ui/tooltip';
 import { useWorkcells } from '@/lib/hooks/use-workcells';
+import { useRouter } from 'next/navigation';
 
 export default function WorkcellsPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'name' | 'date'>('name');
@@ -68,8 +70,28 @@ export default function WorkcellsPage() {
     isLoading,
     initialiseWorkcell,
     initialiseInstruments,
-    deleteWorkcell
+    deleteWorkcell,
+    createWorkcell
   } = useWorkcells();
+
+  const handleNewWorkcell = async () => {
+    try {
+      const newWorkcell = await createWorkcell.mutateAsync({
+        name: 'New Workcell',
+        instruments: {}
+      });
+      
+      // Navigate to the workcell configuration page
+      router.push(`/dashboard/workcells/${newWorkcell.id}`);
+    } catch (error) {
+      console.error('Error creating workcell:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create workcell',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const filteredWorkcells = workcells
     ?.filter((workcell) =>
@@ -132,11 +154,9 @@ export default function WorkcellsPage() {
               Manage and monitor your laboratory workcells
             </p>
           </div>
-          <Button asChild>
-            <Link href="/dashboard/workcells/new">
-              <PlusIcon className="h-4 w-4 mr-2" />
-              New Workcell
-            </Link>
+          <Button onClick={handleNewWorkcell}>
+            <PlusIcon className="h-4 w-4 mr-2" />
+            New Workcell
           </Button>
         </div>
 
@@ -209,11 +229,9 @@ export default function WorkcellsPage() {
                   ? `No workcells match "${searchTerm}". Try a different search term.` 
                   : "You haven't created any workcells yet."}
               </p>
-              <Button className="mt-4" asChild>
-                <Link href="/dashboard/workcells/new">
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Create Workcell
-                </Link>
+              <Button className="mt-4" onClick={handleNewWorkcell}>
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Create Workcell
               </Button>
             </CardContent>
           </Card>
