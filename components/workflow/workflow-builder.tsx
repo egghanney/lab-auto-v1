@@ -371,6 +371,15 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   };
 
   const handleSave = () => {
+    if (nodes.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Please add at least one instrument to the workflow before saving.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     const config = generateWorkflowConfig();
     if (onSave) {
       onSave(config);
