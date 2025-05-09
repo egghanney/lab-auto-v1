@@ -29,6 +29,7 @@ import {
   MinusIcon,
   PanelLeftIcon, 
   PanelRightIcon, 
+  PlayIcon,
   PlusIcon,
   SaveIcon,
   SearchIcon,
@@ -58,6 +59,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 interface WorkflowBuilderProps {
   initialWorkflow?: WorkflowConfig;
@@ -92,7 +94,10 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isTaskListOpen, setIsTaskListOpen] = useState(true);
   const [openTaskLabware, setOpenTaskLabware] = useState<string | null>(null);
+  const [showRunDialog, setShowRunDialog] = useState(false);
+  const [runWorkcellId, setRunWorkcellId] = useState<string>('');
   const { toast } = useToast();
+  const router = useRouter();
 
   const { workcells, isLoading } = useWorkcells();
 
@@ -297,6 +302,72 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
     setNodes(nodes => [...nodes, newNode]);
   }, [selectedInstrument, selectedInstrumentId, setNodes, nodes.length, onDeleteNode]);
 
+  const handleSave = () => {
+    if (nodes.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Please add at least one instrument to the workflow before saving.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const config = generateWorkflowConfig();
+    if (onSave) {
+      onSave(config);
+    }
+    toast({
+      title: 'Success',
+      description: 'Workflow saved successfully',
+    });
+  };
+
+  const handleStartRun = async () => {
+    if (nodes.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Please add at least one instrument to the workflow before starting a run.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!runWorkcellId) {
+      toast({
+        title: 'Error',
+        description: 'Please select a workcell to run the workflow.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      // Save the workflow first
+      const config = generateWorkflowConfig();
+      if (onSave) {
+        await onSave(config);
+      }
+
+      // Mock API call to start the run
+      const runId = Date.now().toString();
+      
+      // Redirect to the run page
+      router.push(`/dashboard/runs/${runId}`);
+      
+      toast({
+        title: 'Success',
+        description: 'Run started successfully',
+      });
+    } catch (error) {
+      console.error('Error starting run:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start the run. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const generateWorkflowConfig = (): WorkflowConfig => {
     const tasks: Record<string, Task> = {};
     const instruments: Record<string, WorkflowInstrument> = {};
@@ -368,26 +439,6 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
       time_constraints: [],
       instrument_blocks: []
     };
-  };
-
-  const handleSave = () => {
-    if (nodes.length === 0) {
-      toast({
-        title: 'Error',
-        description: 'Please add at least one instrument to the workflow before saving.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    const config = generateWorkflowConfig();
-    if (onSave) {
-      onSave(config);
-    }
-    toast({
-      title: 'Success',
-      description: 'Workflow saved successfully',
-    });
   };
 
   const jsonOutput = useMemo(() => {
@@ -574,6 +625,35 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
 
   return (
     <ReactFlowProvider>
+      <Dialog open={showRunDialog} onOpenChange={setShowRunDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Start Workflow Run</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Select Workcell</Label>
+              <Select value={runWorkcellId} onValueChange={setRunWorkcellId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a workcell" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workcells.map((workcell) => (
+                    <SelectItem key={workcell.id} value={workcell.id}>
+                      {workcell.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full" onClick={handleStartRun}>
+              <PlayIcon className="h-4 w-4 mr-2" />
+              Start Run
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="h-[calc(100vh-8rem)] border rounded-xl overflow-hidden bg-gradient-to-br from-background to-muted/20">
         <ResizablePanelGroup direction="horizontal">
           {showLeftPanel && (
@@ -763,6 +843,10 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                 </Button>
                 <Button variant="outline" size="icon" onClick={handleSave}>
                   <SaveIcon className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" onClick={()=> setShowRunDialog(true)}>
+                  <PlayIcon className="h-4 w-4 mr-2" />
+                  Run
                 </Button>
               </Panel>
             </ReactFlow>
