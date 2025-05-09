@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -30,8 +30,9 @@ import {
   PanelLeftIcon, 
   PanelRightIcon, 
   PlusIcon,
+  SaveIcon,
+  SearchIcon,
   Settings2Icon,
-  TrashIcon,
   XIcon,
 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
@@ -56,6 +57,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useToast } from '@/hooks/use-toast';
 
 interface WorkflowBuilderProps {
   initialWorkflow?: WorkflowConfig;
@@ -68,6 +70,8 @@ const nodeTypes: NodeTypes = {
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
+
+const STORAGE_KEY = 'workflow_builder_state';
 
 const edgeOptions = {
   animated: true,
@@ -88,8 +92,32 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isTaskListOpen, setIsTaskListOpen] = useState(true);
   const [openTaskLabware, setOpenTaskLabware] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const { workcells, isLoading } = useWorkcells();
+
+  // Load saved state from localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem(STORAGE_KEY);
+    if (savedState) {
+      try {
+        const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedState);
+        setNodes(savedNodes);
+        setEdges(savedEdges);
+      } catch (error) {
+        console.error('Error loading saved state:', error);
+      }
+    }
+  }, [setNodes, setEdges]);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    const state = {
+      nodes,
+      edges,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [nodes, edges]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge({ ...params, ...edgeOptions }, eds)),
@@ -340,6 +368,17 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
       time_constraints: [],
       instrument_blocks: []
     };
+  };
+
+  const handleSave = () => {
+    const config = generateWorkflowConfig();
+    if (onSave) {
+      onSave(config);
+    }
+    toast({
+      title: 'Success',
+      description: 'Workflow saved successfully',
+    });
   };
 
   const jsonOutput = useMemo(() => {
@@ -712,6 +751,9 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                 </Button>
                 <Button variant="outline" size="icon" onClick={() => setShowRightPanel(!showRightPanel)}>
                   <FileJsonIcon className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={handleSave}>
+                  <SaveIcon className="h-4 w-4" />
                 </Button>
               </Panel>
             </ReactFlow>
