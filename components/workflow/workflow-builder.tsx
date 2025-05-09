@@ -31,6 +31,7 @@ import {
   PanelRightIcon, 
   PlusIcon,
   SaveIcon,
+  SearchIcon,
   Settings2Icon,
   XIcon,
 } from 'lucide-react';
@@ -95,7 +96,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
 
   const { workcells, isLoading } = useWorkcells();
 
-  // Load saved state from localStorage on mount
+  // Load saved state from localStorage
   useEffect(() => {
     const savedState = localStorage.getItem(STORAGE_KEY);
     if (savedState) {
@@ -107,17 +108,15 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
         console.error('Error loading saved state:', error);
       }
     }
-  }, []);
+  }, [setNodes, setEdges]);
 
-  // Save state to localStorage whenever nodes or edges change
+  // Save state to localStorage whenever it changes
   useEffect(() => {
-    if (nodes.length > 0 || edges.length > 0) {
-      const state = {
-        nodes,
-        edges,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
+    const state = {
+      nodes,
+      edges,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [nodes, edges]);
 
   const onConnect = useCallback(
@@ -385,14 +384,6 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
     if (onSave) {
       onSave(config);
     }
-
-    // Save to localStorage
-    const state = {
-      nodes,
-      edges,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
     toast({
       title: 'Success',
       description: 'Workflow saved successfully',
@@ -403,6 +394,179 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
     const config = generateWorkflowConfig();
     return JSON.stringify(config, null, 2);
   }, [nodes, edges]);
+
+  const renderSelectedTasks = () => {
+    if (!selectedTask) return null;
+
+    return selectedTask.data.selectedTasks.map(taskName => {
+      const task = selectedTask.data.instrument.driver.tasks?.find(t => t.name === taskName);
+      const taskLabware = selectedTask.data.selectedLabware[taskName] || [];
+      const isOpen = openTaskLabware === taskName;
+      
+      return (
+        <Card key={taskName} className="p-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="font-medium text-sm">{taskName}</div>
+              {task?.parameters && task.parameters.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {task.parameters.map(param => (
+                    <Badge key={param} variant="secondary" className="text-xs">
+                      {param}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => setOpenTaskLabware(isOpen ? null : taskName)}
+              >
+                {isOpen ? (
+                  <ChevronUpIcon className="h-4 w-4" />
+                ) : (
+                  <ChevronDownIcon className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 hover:text-destructive"
+                onClick={() => selectedTask.data.onTaskRemove(taskName)}
+              >
+                <XIcon className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <Collapsible open={isOpen}>
+            <CollapsibleContent className="mt-2 space-y-2">
+              <div className="text-xs font-medium text-muted-foreground mb-2">Available Labware</div>
+              {labwareOptions.map(labware => (
+                <Card key={labware.id} className="p-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium">{labware.name}</div>
+                      <div className="text-xs text-muted-foreground">{labware.description}</div>
+                      <Badge variant="secondary" className="mt-1 text-xs">
+                        {labware.slots} slots
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => selectedTask.data.onLabwareSelect(taskName, labware.id)}
+                      disabled={taskLabware.includes(labware.id)}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+
+              {taskLabware.length > 0 && (
+                <>
+                  <Separator className="my-2" />
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Selected Labware</div>
+                  <div className="space-y-2">
+                    {taskLabware.map(labwareId => {
+                      const labware = labwareOptions.find(l => l.id === labwareId);
+                      const config = selectedTask.data.labwareConfig?.[taskName]?.[labwareId] || {};
+                      
+                      return (
+                        <div key={labwareId} className="bg-muted rounded p-2">
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs font-medium">{labware?.name}</div>
+                            <div className="flex items-center gap-1">
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                                    <Settings2Icon className="h-3 w-3" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Configure {labware?.name}</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <Label>Slot Number</Label>
+                                        <Input
+                                          type="number"
+                                          value={config.slot || 1}
+                                          onChange={(e) => selectedTask.data.onLabwareConfigUpdate(taskName, labwareId, {
+                                            ...config,
+                                            slot: parseInt(e.target.value)
+                                          })}
+                                          min={1}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label>Temperature (°C)</Label>
+                                        <Input
+                                          type="number"
+                                          value={config.temperature || 25}
+                                          onChange={(e) => selectedTask.data.onLabwareConfigUpdate(taskName, labwareId, {
+                                            ...config,
+                                            temperature: parseInt(e.target.value)
+                                          })}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <Label>Sealed</Label>
+                                      <Switch
+                                        checked={config.isSealed || false}
+                                        onCheckedChange={(checked) => selectedTask.data.onLabwareConfigUpdate(taskName, labwareId, {
+                                          ...config,
+                                          isSealed: checked
+                                        })}
+                                      />
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 hover:text-destructive"
+                                onClick={() => selectedTask.data.onLabwareRemove(taskName, labwareId)}
+                              >
+                                <XIcon className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          {config && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              <Badge variant="outline" className="text-xs">
+                                Slot {config.slot || 1}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {config.temperature || 25}°C
+                              </Badge>
+                              {config.isSealed && (
+                                <Badge variant="outline" className="text-xs">
+                                  Sealed
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+      );
+    });
+  };
 
   if (isLoading) {
     return <div>Loading workcells...</div>;
