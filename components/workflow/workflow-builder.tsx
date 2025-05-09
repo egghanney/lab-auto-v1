@@ -94,8 +94,6 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isTaskListOpen, setIsTaskListOpen] = useState(true);
   const [openTaskLabware, setOpenTaskLabware] = useState<string | null>(null);
-  const [showRunDialog, setShowRunDialog] = useState(false);
-  const [runWorkcellId, setRunWorkcellId] = useState<string>('');
   const { toast } = useToast();
   const router = useRouter();
 
@@ -332,10 +330,10 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
       return;
     }
 
-    if (!runWorkcellId) {
+    if (!selectedWorkcellId) {
       toast({
         title: 'Error',
-        description: 'Please select a workcell to run the workflow.',
+        description: 'Please select a workcell first.',
         variant: 'destructive'
       });
       return;
@@ -625,35 +623,6 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
 
   return (
     <ReactFlowProvider>
-      <Dialog open={showRunDialog} onOpenChange={setShowRunDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Start Workflow Run</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Select Workcell</Label>
-              <Select value={runWorkcellId} onValueChange={setRunWorkcellId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a workcell" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workcells.map((workcell) => (
-                    <SelectItem key={workcell.id} value={workcell.id}>
-                      {workcell.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button className="w-full" onClick={handleStartRun}>
-              <PlayIcon className="h-4 w-4 mr-2" />
-              Start Run
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <div className="h-[calc(100vh-8rem)] border rounded-xl overflow-hidden bg-gradient-to-br from-background to-muted/20">
         <ResizablePanelGroup direction="horizontal">
           {showLeftPanel && (
@@ -844,7 +813,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                 <Button variant="outline" size="icon" onClick={handleSave}>
                   <SaveIcon className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" onClick={()=> setShowRunDialog(true)}>
+                <Button variant="outline" onClick={handleStartRun}>
                   <PlayIcon className="h-4 w-4 mr-2" />
                   Run
                 </Button>
@@ -865,6 +834,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                       <Button variant="ghost" size="icon" onClick={() => setShowRightPanel(false)}>
                         <XIcon className="h-4 w-4" />
                       </Button>
+                    
                     </div>
                   </div>
                   <ScrollArea className="h-[calc(100vh-16rem)]">
