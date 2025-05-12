@@ -11,12 +11,11 @@ import {
 } from '@/components/ui/card';
 import { useParams, useRouter } from 'next/navigation';
 import { Workflow } from '@/lib/types';
+import { apiClient } from '@/lib/api/api-client';
 import { ChevronLeftIcon, PlayIcon, SaveIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import WorkflowBuilder from '@/components/workflow/workflow-builder';
-
-const STORAGE_KEY = 'lab_workflows';
 
 export default function WorkflowPage() {
   const params = useParams();
@@ -27,15 +26,31 @@ export default function WorkflowPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const loadWorkflow = () => {
+    const fetchWorkflow = async () => {
       try {
-        const savedWorkflows = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        const workflow = savedWorkflows.find((w: Workflow) => w.id === params.id);
-        if (workflow) {
-          setWorkflow(workflow);
-        }
+        // In a real app, this would use the API client
+        // const data = await apiClient.getWorkflow(params.id);
+        // setWorkflow(data);
+        
+        // Mock data for demonstration
+        const mockWorkflow: Workflow = {
+          id: params.id as string,
+          name: 'DNA Extraction',
+          config: {
+            tasks: {},
+            instruments: {},
+            labware: {},
+            history: {},
+            time_constraints: [],
+            instrument_blocks: []
+          },
+          created_at: '2025-03-15T10:00:00Z',
+          updated_at: '2025-03-15T10:00:00Z'
+        };
+        
+        setWorkflow(mockWorkflow);
       } catch (error) {
-        console.error('Error loading workflow:', error);
+        console.error('Error fetching workflow:', error);
         toast({
           title: 'Error',
           description: 'Failed to load workflow',
@@ -46,7 +61,7 @@ export default function WorkflowPage() {
       }
     };
 
-    loadWorkflow();
+    fetchWorkflow();
   }, [params.id, toast]);
 
   const handleSave = async () => {
@@ -54,17 +69,8 @@ export default function WorkflowPage() {
 
     try {
       setIsSaving(true);
-      
-      // Get existing workflows
-      const savedWorkflows = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      
-      // Update the workflow
-      const updatedWorkflows = savedWorkflows.map((w: Workflow) => 
-        w.id === workflow.id ? { ...workflow, updated_at: new Date().toISOString() } : w
-      );
-      
-      // Save back to localStorage
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedWorkflows));
+      // In a real app, this would call the API
+      // await apiClient.updateWorkflow(params.id, workflow);
       
       toast({
         title: 'Success',
