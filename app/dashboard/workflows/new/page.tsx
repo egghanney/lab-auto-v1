@@ -5,10 +5,9 @@ import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { ChevronLeftIcon, SaveIcon } from 'lucide-react';
 import Link from 'next/link';
-import { WorkflowConfig, WorkflowInput } from '@/lib/types';
+import { WorkflowConfig, WorkflowInput, Workflow } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/api/api-client';
 import { Input } from '@/components/ui/input';
 
 // Dynamically import WorkflowBuilder with no SSR
@@ -16,6 +15,8 @@ const WorkflowBuilder = dynamic(
   () => import('@/components/workflow/workflow-builder'),
   { ssr: false }
 );
+
+const STORAGE_KEY = 'lab_workflows';
 
 export default function NewWorkflowPage() {
   const { toast } = useToast();
@@ -44,26 +45,31 @@ export default function NewWorkflowPage() {
     try {
       setIsSaving(true);
       
-      const workflowInput: WorkflowInput = {
+      const newWorkflow: Workflow = {
+        id: crypto.randomUUID(),
         name,
-        config: workflowConfig
+        config: workflowConfig,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       
-      // In a real application, call the API to save the workflow
-      // await apiClient.createWorkflow(workflowInput);
+      // Get existing workflows
+      const existingWorkflows = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      
+      // Add new workflow
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([...existingWorkflows, newWorkflow]));
       
       toast({
-        title: 'Workflow saved',
-        description: 'Your workflow has been saved successfully.',
+        title: 'Success',
+        description: 'Workflow saved successfully',
       });
       
-      // Redirect to the workflows list
       router.push('/dashboard/workflows');
     } catch (error) {
       console.error('Error saving workflow:', error);
       toast({
-        title: 'Error saving workflow',
-        description: 'There was a problem saving your workflow. Please try again.',
+        title: 'Error',
+        description: 'Failed to save workflow. Please try again.',
         variant: 'destructive',
       });
     } finally {

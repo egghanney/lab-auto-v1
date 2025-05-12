@@ -39,14 +39,13 @@ import {
 import { MoreHorizontalIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { apiClient } from '@/lib/api/api-client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
+
+const STORAGE_KEY = 'lab_workflows';
 
 export default function WorkflowsPage() {
   const { toast } = useToast();
@@ -61,82 +60,71 @@ export default function WorkflowsPage() {
   const [importedFile, setImportedFile] = useState<File | null>(null);
 
   useEffect(() => {
-    const fetchWorkflows = async () => {
+    const loadWorkflows = () => {
       try {
-        // In a real app, this would use the API client
-        // const data = await apiClient.getWorkflows();
-        // setWorkflows(data.items);
-        
-        // Mock data for demonstration
-        const mockWorkflows: Workflow[] = [
-          {
-            id: '1',
-            name: 'DNA Extraction',
-            config: {
-              tasks: {},
-              instruments: {},
-              labware: {},
-              history: {},
-              time_constraints: [],
-              instrument_blocks: []
-            },
-            created_at: '2025-03-15T10:00:00Z',
-            updated_at: '2025-03-15T10:00:00Z'
-          },
-          {
-            id: '2',
-            name: 'Sample Preparation',
-            config: {
-              tasks: {},
-              instruments: {},
-              labware: {},
-              history: {},
-              time_constraints: [],
-              instrument_blocks: []
-            },
-            created_at: '2025-03-10T14:30:00Z',
-            updated_at: '2025-03-12T09:15:00Z'
-          },
-          {
-            id: '3',
-            name: 'PCR Protocol',
-            config: {
-              tasks: {},
-              instruments: {},
-              labware: {},
-              history: {},
-              time_constraints: [],
-              instrument_blocks: []
-            },
-            created_at: '2025-02-28T11:20:00Z',
-            updated_at: '2025-03-05T16:45:00Z'
-          },
-          {
-            id: '4',
-            name: 'Cell Culture',
-            config: {
-              tasks: {},
-              instruments: {},
-              labware: {},
-              history: {},
-              time_constraints: [],
-              instrument_blocks: []
-            },
-            created_at: '2025-03-01T08:00:00Z',
-            updated_at: '2025-03-01T08:00:00Z'
-          },
-        ];
-        
-        setWorkflows(mockWorkflows);
+        const savedWorkflows = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        setWorkflows(savedWorkflows);
       } catch (error) {
-        console.error('Error fetching workflows:', error);
+        console.error('Error loading workflows:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load workflows',
+          variant: 'destructive',
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchWorkflows();
-  }, []);
+    loadWorkflows();
+  }, [toast]);
+
+  const handleDelete = (id: string) => {
+    try {
+      const updatedWorkflows = workflows.filter(w => w.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedWorkflows));
+      setWorkflows(updatedWorkflows);
+      toast({
+        title: 'Success',
+        description: 'Workflow deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting workflow:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete workflow',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDuplicate = (workflow: Workflow) => {
+    try {
+      const newWorkflow: Workflow = {
+        ...workflow,
+        id: crypto.randomUUID(),
+        name: `${workflow.name} (Copy)`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      const updatedWorkflows = [...workflows, newWorkflow];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedWorkflows));
+      setWorkflows(updatedWorkflows);
+      
+      toast({
+        title: 'Success',
+        description: 'Workflow duplicated successfully',
+      });
+    } catch (error) {
+      console.error('Error duplicating workflow:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to duplicate workflow',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -160,8 +148,17 @@ export default function WorkflowsPage() {
             throw new Error('Invalid workflow format');
           }
 
-          // In a real app, you would call the API to create the workflow
-          // await apiClient.createWorkflow(workflow);
+          const newWorkflow: Workflow = {
+            id: crypto.randomUUID(),
+            name: workflow.name,
+            config: workflow.config,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          const updatedWorkflows = [...workflows, newWorkflow];
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedWorkflows));
+          setWorkflows(updatedWorkflows);
 
           toast({
             title: 'Success',
@@ -170,9 +167,6 @@ export default function WorkflowsPage() {
 
           setShowImportDialog(false);
           setImportedFile(null);
-          
-          // Navigate to the new workflow page with the imported config
-          router.push('/dashboard/workflows/new');
         } catch (error) {
           toast({
             title: 'Error',
@@ -405,9 +399,16 @@ export default function WorkflowsPage() {
                         <DropdownMenuItem asChild>
                           <Link href={`/dashboard/workflows/${workflow.id}/run`}>Run</Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDuplicate(workflow)}>
+                          Duplicate
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => handleDelete(workflow.id)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -526,9 +527,16 @@ export default function WorkflowsPage() {
                             <DropdownMenuItem asChild>
                               <Link href={`/dashboard/workflows/${workflow.id}/run`}>Run</Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDuplicate(workflow)}>
+                              Duplicate
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => handleDelete(workflow.id)}
+                            >
+                              Delete
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
