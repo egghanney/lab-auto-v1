@@ -10,13 +10,165 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 
-// Dynamically import WorkflowBuilder with no SSR
 const WorkflowBuilder = dynamic(
   () => import('@/components/workflow/workflow-builder'),
   { ssr: false }
 );
 
 const STORAGE_KEY = 'lab_workflows';
+
+// Sample workflows for demonstration
+const sampleWorkflows: Workflow[] = [
+  {
+    id: '1',
+    name: 'DNA Extraction Protocol',
+    config: {
+      tasks: {
+        'pickup_samples': {
+          id: 'pickup_samples',
+          instrument_type: 'RobotArm',
+          duration: 30,
+          dependencies: [],
+          arguments: {},
+          labware_id: 'microplate_96',
+          destination_slot: 1,
+          source_task: null
+        },
+        'liquid_handling': {
+          id: 'liquid_handling',
+          instrument_type: 'PipettingRobot',
+          duration: 300,
+          dependencies: ['pickup_samples'],
+          arguments: {
+            volume: 100,
+            flow_rate: 150
+          },
+          action: 'transfer_liquid',
+          required_labware: {
+            'microplate_96': {
+              id: 'microplate_96',
+              initial_slot: 1,
+              final_slot: 1,
+              quantity: 1
+            }
+          }
+        }
+      },
+      instruments: {
+        'robot_arm': {
+          id: 'robot_arm',
+          type: 'RobotArm',
+          capacity: 2
+        },
+        'pipettor': {
+          id: 'pipettor',
+          type: 'PipettingRobot',
+          capacity: 8
+        }
+      },
+      labware: {
+        'microplate_96': {
+          id: 'microplate_96',
+          starting_location: {
+            instrument_id: 'robot_arm',
+            slot: 1
+          }
+        }
+      },
+      history: {},
+      time_constraints: [],
+      instrument_blocks: []
+    },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: '2',
+    name: 'PCR Setup',
+    config: {
+      tasks: {
+        'get_reagents': {
+          id: 'get_reagents',
+          instrument_type: 'RobotArm',
+          duration: 45,
+          dependencies: [],
+          arguments: {},
+          labware_id: 'deepwell_24',
+          destination_slot: 1,
+          source_task: null
+        },
+        'mix_pcr': {
+          id: 'mix_pcr',
+          instrument_type: 'PipettingRobot',
+          duration: 180,
+          dependencies: ['get_reagents'],
+          arguments: {
+            volume: 50,
+            repetitions: 3
+          },
+          action: 'mix_liquid',
+          required_labware: {
+            'deepwell_24': {
+              id: 'deepwell_24',
+              initial_slot: 1,
+              final_slot: 1,
+              quantity: 1
+            }
+          }
+        },
+        'run_pcr': {
+          id: 'run_pcr',
+          instrument_type: 'Thermocycler',
+          duration: 3600,
+          dependencies: ['mix_pcr'],
+          arguments: {
+            profile_name: 'standard_pcr'
+          },
+          action: 'run_protocol',
+          required_labware: {
+            'deepwell_24': {
+              id: 'deepwell_24',
+              initial_slot: 1,
+              final_slot: 1,
+              quantity: 1
+            }
+          }
+        }
+      },
+      instruments: {
+        'robot_arm': {
+          id: 'robot_arm',
+          type: 'RobotArm',
+          capacity: 2
+        },
+        'pipettor': {
+          id: 'pipettor',
+          type: 'PipettingRobot',
+          capacity: 8
+        },
+        'thermocycler': {
+          id: 'thermocycler',
+          type: 'Thermocycler',
+          capacity: 1
+        }
+      },
+      labware: {
+        'deepwell_24': {
+          id: 'deepwell_24',
+          starting_location: {
+            instrument_id: 'robot_arm',
+            slot: 1
+          }
+        }
+      },
+      history: {},
+      time_constraints: [],
+      instrument_blocks: []
+    },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
 
 export default function NewWorkflowPage() {
   const { toast } = useToast();
@@ -27,9 +179,14 @@ export default function NewWorkflowPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [workflowConfig, setWorkflowConfig] = useState<WorkflowConfig | null>(null);
 
-  // Only show the component after mounting to prevent hydration issues
   useEffect(() => {
     setMounted(true);
+
+    // Initialize sample workflows if none exist
+    const existingWorkflows = localStorage.getItem(STORAGE_KEY);
+    if (!existingWorkflows) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleWorkflows));
+    }
   }, []);
 
   const handleSave = async () => {
@@ -78,7 +235,7 @@ export default function NewWorkflowPage() {
   };
 
   if (!mounted) {
-    return null; // Return null on server-side and first render
+    return null;
   }
 
   return (
