@@ -96,6 +96,14 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const router = useRouter();
 
   const { workcells, isLoading } = useWorkcells();
+  const selectedWorkcell = useMemo(() => 
+    workcells?.find(w => w.id === selectedWorkcellId), 
+    [workcells, selectedWorkcellId]
+  );
+  const selectedInstrument = useMemo(() => 
+    selectedWorkcell?.instruments?.find(i => i.id === selectedInstrumentId),
+    [selectedWorkcell, selectedInstrumentId]
+  );
 
   // Update workflow configuration whenever nodes or edges change
   useEffect(() => {
