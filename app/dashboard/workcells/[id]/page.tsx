@@ -34,7 +34,8 @@ import {
 const driverConfigSchema = z.object({
   name: z.string().min(1, "Name is required"),
   version: z.string().min(1, "Version is required"),
-  config: z.record(z.any()).default({})
+  config: z.record(z.any()).default({}),
+  group: z.string().min(1, "Group is required")
 });
 
 const instrumentSchema = z.object({
@@ -57,10 +58,12 @@ export default function WorkcellPage() {
   const [showAddInstrument, setShowAddInstrument] = useState(false);
   const [newInstrument, setNewInstrument] = useState({
     id: '',
+    group: '',
     driver: {
       name: '',
       version: '',
-      config: {} as Record<string, any>
+      config: {} as Record<string, any>,
+      group: ''
     }
   });
   const [expandedInstruments, setExpandedInstruments] = useState<Set<string>>(new Set());
@@ -145,10 +148,10 @@ export default function WorkcellPage() {
   };
 
   const handleAddInstrument = () => {
-    if (!newInstrument.id || !newInstrument.driver.name || !newInstrument.driver.version) {
+    if (!newInstrument.id || !newInstrument.driver.name || !newInstrument.driver.version || !newInstrument.group) {
       toast({
         title: 'Error',
-        description: 'Instrument ID, driver name, and version are required',
+        description: 'Instrument ID, group, driver name, and version are required',
         variant: 'destructive',
       });
       return;
@@ -157,15 +160,23 @@ export default function WorkcellPage() {
     const instruments = form.getValues('instruments');
     form.setValue('instruments', {
       ...instruments,
-      [newInstrument.id]: newInstrument
+      [newInstrument.id]: {
+        ...newInstrument,
+        driver: {
+          ...newInstrument.driver,
+          group: newInstrument.group
+        }
+      }
     });
     setShowAddInstrument(false);
     setNewInstrument({
       id: '',
+      group: '',
       driver: {
         name: '',
         version: '',
-        config: {}
+        config: {},
+        group: ''
       }
     });
   };
@@ -318,7 +329,8 @@ export default function WorkcellPage() {
                                   ...newInstrument.driver,
                                   name: '',
                                   version: '',
-                                  config: {}
+                                  config: {},
+                                  group: value
                                 }
                               });
                             }}
@@ -500,7 +512,7 @@ export default function WorkcellPage() {
                       <Button 
                         className="w-full" 
                         onClick={handleAddInstrument}
-                        disabled={!newInstrument.id || !newInstrument.driver.name || !newInstrument.driver.version}
+                        disabled={!newInstrument.id || !newInstrument.driver.name || !newInstrument.driver.version || !newInstrument.group}
                       >
                         Add Instrument
                       </Button>
@@ -537,7 +549,7 @@ export default function WorkcellPage() {
                               <CardDescription>
                                 {instrument.driver.name} v{instrument.driver.version}
                                 <Badge variant="secondary" className="ml-2">
-                                  {instrument.group}
+                                  {instrument.driver.group}
                                 </Badge>
                               </CardDescription>
                             </div>
