@@ -94,12 +94,14 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
   };
   
   return (
-    <div className={cn(
-      'px-4 py-3 rounded-xl border-2 shadow-lg backdrop-blur-sm min-w-[280px] transition-all duration-200 group relative',
-      'bg-gradient-to-br from-primary-50 to-primary-100/50 border-primary-200 hover:border-primary-300',
-      'dark:from-primary-950 dark:to-primary-900/50 dark:border-primary-800 dark:hover:border-primary-700',
-      selected && 'ring-2 ring-primary ring-offset-2 dark:ring-offset-background'
-    )}>
+    <div
+      className={cn(
+        'px-4 py-3 rounded-xl border-2 shadow-lg backdrop-blur-sm min-w-[280px] transition-all duration-200 group relative',
+        'bg-gradient-to-br from-primary-50 to-primary-100/50 border-primary-200 hover:border-primary-300',
+        'dark:from-primary-950 dark:to-primary-900/50 dark:border-primary-800 dark:hover:border-primary-700',
+        selected && 'ring-2 ring-primary ring-offset-2 dark:ring-offset-background'
+      )}
+    >
       <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 w-6 h-6 flex items-center justify-center">
         <Handle
           type="target"
@@ -125,12 +127,10 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
           className="flex items-center gap-1 font-medium"
         >
           <BeakerIcon className="h-4 w-4" />
-          {instrument.group}
+          {instrument.driver.name}
         </Badge>
         <div className="flex items-center gap-2">
-          <Badge variant="outline">
-            {instrument.instruments.length} instruments
-          </Badge>
+          <Badge variant="outline">v{instrument.driver.version}</Badge>
           <Button
             variant="ghost"
             size="icon"
