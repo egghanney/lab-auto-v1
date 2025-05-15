@@ -2,19 +2,42 @@ export interface DriverConfig {
   name: string;
   version: string;
   config: Record<string, any>;
-  group?: string;
+  group: string;
+}
+
+export interface InstrumentAttributes {
+  capacity?: number;
+  slots?: Array<{
+    name: string;
+    type: string;
+    position?: {
+      x: number;
+      y: number;
+      z: number;
+    };
+  }>;
+  location?: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  status: 'available' | 'busy' | 'error' | 'offline' | 'maintenance';
 }
 
 export interface InstrumentInput {
   id: string;
+  name: string;
   driver: DriverConfig;
   group: string;
+  attributes?: InstrumentAttributes;
 }
 
 export interface Instrument {
   id: string;
+  name: string;
   driver: DriverConfig;
   group: string;
+  attributes?: InstrumentAttributes;
 }
 
 export interface WorkcellInput {

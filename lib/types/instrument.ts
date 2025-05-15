@@ -113,6 +113,28 @@ export const driverOptions: DriverOption[] = [
   }
 ];
 
+// Schema for instrument attributes
+export const instrumentAttributesSchema = z.object({
+  capacity: z.number().optional(),
+  slots: z.array(z.object({
+    name: z.string(),
+    type: z.string(),
+    position: z.object({
+      x: z.number(),
+      y: z.number(),
+      z: z.number()
+    }).optional()
+  })).optional(),
+  location: z.object({
+    x: z.number(),
+    y: z.number(),
+    z: z.number()
+  }).optional(),
+  status: z.enum(['available', 'busy', 'error', 'offline', 'maintenance']).default('available')
+});
+
+export type InstrumentAttributes = z.infer<typeof instrumentAttributesSchema>;
+
 // Schema for instrument group
 export const instrumentGroupSchema = z.object({
   name: z.string().min(1, "Group name is required"),
