@@ -34,9 +34,6 @@ import {
   SearchIcon,
   Settings2Icon,
   XIcon,
-  BeakerIcon,
-  ThermometerIcon,
-  ShieldIcon,
 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
@@ -75,6 +72,8 @@ const nodeTypes: NodeTypes = {
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
 
+const STORAGE_KEY = 'workflow_builder_state';
+
 const edgeOptions = {
   animated: true,
   style: {
@@ -88,12 +87,12 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(false);
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Node | null>(null);
   const [selectedWorkcellId, setSelectedWorkcellId] = useState<string>('');
   const [selectedInstrumentId, setSelectedInstrumentId] = useState<string>('');
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [isTaskListOpen, setIsTaskListOpen] = useState(true);
+  const [openTaskLabware, setOpenTaskLabware] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -266,10 +265,8 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
       };
 
       setNodes(nodes => [...nodes, newNode]);
-      setSelectedNode(newNode);
-      setExpandedGroups(new Set([...expandedGroups, group]));
     },
-    [selectedWorkcell, instrumentsByGroup, setNodes, expandedGroups]
+    [selectedWorkcell, instrumentsByGroup, setNodes]
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -283,19 +280,16 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-    setSelectedNode(node);
-    if (node.data.instrument?.group) {
-      setExpandedGroups(new Set([...expandedGroups, node.data.instrument.group]));
-    }
-  }, [expandedGroups]);
+    setSelectedTask(node);
+  }, []);
 
   const onDeleteNode = useCallback((nodeId: string) => {
     setNodes(nodes => nodes.filter(node => node.id !== nodeId));
     setEdges(edges => edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId));
-    if (selectedNode?.id === nodeId) {
-      setSelectedNode(null);
+    if (selectedTask?.id === nodeId) {
+      setSelectedTask(null);
     }
-  }, [setNodes, setEdges, selectedNode]);
+  }, [setNodes, setEdges, selectedTask]);
 
   const handleZoomIn = useCallback(() => {
     setZoomLevel(z => Math.min(z + 0.2, 2));
@@ -305,29 +299,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
     setZoomLevel(z => Math.max(z - 0.2, 0.2));
   }, []);
 
-  const toggleGroup = (group: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(group)) {
-        next.delete(group);
-      } else {
-        next.add(group);
-      }
-      return next;
-    });
-  };
-
-  const toggleTask = (taskId: string) => {
-    setExpandedTasks(prev => {
-      const next = new Set(prev);
-      if (next.has(taskId)) {
-        next.delete(taskId);
-      } else {
-        next.add(taskId);
-      }
-      return next;
-    });
-  };
+  const isWorkcellSelectionDisabled = nodes.length > 0;
 
   const getWorkflowJson = useCallback(() => {
     const workflow: WorkflowConfig = {
@@ -346,13 +318,14 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
         workflow.tasks[taskId] = {
           id: taskId,
           instrument_type: node.data.instrument.group,
-          duration: 5,
+          duration: 5, // Default duration
           dependencies: [],
           arguments: {},
           action: taskName,
           required_labware: {}
         };
 
+        // Add labware configuration
         if (selectedLabware[taskName]) {
           selectedLabware[taskName].forEach((labwareId: string) => {
             const config = labwareConfig?.[taskName]?.[labwareId];
@@ -372,7 +345,12 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
     return workflow;
   }, [nodes]);
 
-  const isWorkcellSelectionDisabled = nodes.length > 0;
+  useEffect(() => {
+    if (showRightPanel) {
+      const workflow = getWorkflowJson();
+      console.log('Current Workflow:', workflow);
+    }
+  }, [showRightPanel, nodes, getWorkflowJson]);
 
   return (
     <ReactFlowProvider>
@@ -389,7 +367,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                   <ScrollArea className="h-[calc(100vh-16rem)]">
                     <div className="p-4 space-y-4">
                       <div className="space-y-2">
-                        <Label>Select Workcell</Label>
+                        <label className="text-sm font-medium">Select Workcell</label>
                         <Select 
                           value={selectedWorkcellId} 
                           onValueChange={setSelectedWorkcellId}
@@ -409,10 +387,10 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                       </div>
 
                       {selectedWorkcell && (
-                        <>
+                        <div className="space-y-4">
                           <Separator />
                           <div className="space-y-2">
-                            <Label>Available Instrument Groups</Label>
+                            <label className="text-sm font-medium">Instrument Groups</label>
                             <div className="space-y-2">
                               {instrumentGroups.map(group => (
                                 <Card
@@ -438,310 +416,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                               ))}
                             </div>
                           </div>
-
-                          {nodes.length > 0 && (
-                            <>
-                              <Separator />
-                              <div className="space-y-2">
-                                <Label>Workflow Nodes</Label>
-                                <div className="space-y-2">
-                                  {nodes.map(node => {
-                                    const isGroupExpanded = expandedGroups.has(node.data.instrument.group);
-                                    
-                                    return (
-                                      <Card
-                                        key={node.id}
-                                        className={cn(
-                                          "transition-all",
-                                          selectedNode?.id === node.id && "ring-2 ring-primary"
-                                        )}
-                                      >
-                                        <CardHeader className="p-3">
-                                          <div
-                                            className="flex items-center justify-between cursor-pointer"
-                                            onClick={() => toggleGroup(node.data.instrument.group)}
-                                          >
-                                            <div className="flex items-center gap-2">
-                                              <BeakerIcon className="h-4 w-4" />
-                                              <span className="font-medium">{node.data.instrument.group}</span>
-                                            </div>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                                              {isGroupExpanded ? (
-                                                <ChevronDownIcon className="h-4 w-4" />
-                                              ) : (
-                                                <ChevronRightIcon className="h-4 w-4" />
-                                              )}
-                                            </Button>
-                                          </div>
-                                        </CardHeader>
-
-                                        {isGroupExpanded && (
-                                          <CardContent className="p-3 pt-0">
-                                            <div className="space-y-4">
-                                              {/* Tasks Section */}
-                                              <div className="space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                  <Label className="text-sm">Tasks</Label>
-                                                  <Dialog>
-                                                    <DialogTrigger asChild>
-                                                      <Button variant="outline" size="sm">
-                                                        <PlusIcon className="h-3 w-3 mr-1" />
-                                                        Add Task
-                                                      </Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent>
-                                                      <DialogHeader>
-                                                        <DialogTitle>Add Task</DialogTitle>
-                                                      </DialogHeader>
-                                                      <div className="space-y-2">
-                                                        {node.data.instrument.driver.tasks?.map((task: any) => (
-                                                          <div
-                                                            key={task.name}
-                                                            className="p-2 border rounded-lg hover:bg-accent cursor-pointer"
-                                                            onClick={() => {
-                                                              node.data.onTaskSelect(task.name);
-                                                              setExpandedTasks(new Set([...expandedTasks, task.name]));
-                                                            }}
-                                                          >
-                                                            <div className="font-medium">{task.name}</div>
-                                                            <div className="text-sm text-muted-foreground">
-                                                              {task.description}
-                                                            </div>
-                                                          </div>
-                                                        ))}
-                                                      </div>
-                                                    </DialogContent>
-                                                  </Dialog>
-                                                </div>
-
-                                                {node.data.selectedTasks.map((taskName: string) => {
-                                                  const task = node.data.instrument.driver.tasks?.find(
-                                                    (t: any) => t.name === taskName
-                                                  );
-                                                  const isTaskExpanded = expandedTasks.has(taskName);
-                                                  const taskLabware = node.data.selectedLabware[taskName] || [];
-
-                                                  return (
-                                                    <Card key={taskName} className="border-dashed">
-                                                      <CardHeader className="p-2">
-                                                        <div
-                                                          className="flex items-center justify-between cursor-pointer"
-                                                          onClick={() => toggleTask(taskName)}
-                                                        >
-                                                          <div className="flex items-center gap-2">
-                                                            <span className="text-sm font-medium">
-                                                              {taskName}
-                                                            </span>
-                                                          </div>
-                                                          <div className="flex items-center gap-1">
-                                                            <Button
-                                                              variant="ghost"
-                                                              size="icon"
-                                                              className="h-6 w-6"
-                                                              onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                node.data.onTaskRemove(taskName);
-                                                              }}
-                                                            >
-                                                              <XIcon className="h-3 w-3" />
-                                                            </Button>
-                                                            <Button
-                                                              variant="ghost"
-                                                              size="icon"
-                                                              className="h-6 w-6"
-                                                            >
-                                                              {isTaskExpanded ? (
-                                                                <ChevronDownIcon className="h-3 w-3" />
-                                                              ) : (
-                                                                <ChevronRightIcon className="h-3 w-3" />
-                                                              )}
-                                                            </Button>
-                                                          </div>
-                                                        </div>
-                                                      </CardHeader>
-
-                                                      {isTaskExpanded && (
-                                                        <CardContent className="p-2 pt-0">
-                                                          <div className="space-y-2">
-                                                            <div className="flex items-center justify-between">
-                                                              <Label className="text-xs">Labware</Label>
-                                                              <Dialog>
-                                                                <DialogTrigger asChild>
-                                                                  <Button variant="outline" size="sm">
-                                                                    <PlusIcon className="h-3 w-3 mr-1" />
-                                                                    Add
-                                                                  </Button>
-                                                                </DialogTrigger>
-                                                                <DialogContent>
-                                                                  <DialogHeader>
-                                                                    <DialogTitle>Add Labware</DialogTitle>
-                                                                  </DialogHeader>
-                                                                  <div className="space-y-2">
-                                                                    {labwareOptions.map(labware => (
-                                                                      <div
-                                                                        key={labware.id}
-                                                                        className="p-2 border rounded-lg hover:bg-accent cursor-pointer"
-                                                                        onClick={() => {
-                                                                          node.data.onLabwareSelect(taskName, labware.id);
-                                                                        }}
-                                                                      >
-                                                                        <div className="font-medium">
-                                                                          {labware.name}
-                                                                        </div>
-                                                                        <div className="text-sm text-muted-foreground">
-                                                                          {labware.description}
-                                                                        </div>
-                                                                      </div>
-                                                                    ))}
-                                                                  </div>
-                                                                </DialogContent>
-                                                              </Dialog>
-                                                            </div>
-
-                                                            {taskLabware.map((labwareId: string) => {
-                                                              const labware = labwareOptions.find(
-                                                                l => l.id === labwareId
-                                                              );
-                                                              const config = node.data.labwareConfig?.[taskName]?.[labwareId];
-
-                                                              return (
-                                                                <div
-                                                                  key={labwareId}
-                                                                  className="p-2 border rounded-lg space-y-2"
-                                                                >
-                                                                  <div className="flex items-center justify-between">
-                                                                    <span className="text-xs font-medium">
-                                                                      {labware?.name}
-                                                                    </span>
-                                                                    <div className="flex items-center gap-1">
-                                                                      <Dialog>
-                                                                        <DialogTrigger asChild>
-                                                                          <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            className="h-6 w-6"
-                                                                          >
-                                                                            <Settings2Icon className="h-3 w-3" />
-                                                                          </Button>
-                                                                        </DialogTrigger>
-                                                                        <DialogContent>
-                                                                          <DialogHeader>
-                                                                            <DialogTitle>
-                                                                              Configure {labware?.name}
-                                                                            </DialogTitle>
-                                                                          </DialogHeader>
-                                                                          <div className="space-y-4">
-                                                                            <div className="space-y-2">
-                                                                              <Label>Slot</Label>
-                                                                              <Input
-                                                                                type="number"
-                                                                                min={1}
-                                                                                value={config?.slot || 1}
-                                                                                onChange={(e) => {
-                                                                                  node.data.onLabwareConfigUpdate(
-                                                                                    taskName,
-                                                                                    labwareId,
-                                                                                    {
-                                                                                      ...config,
-                                                                                      slot: parseInt(e.target.value)
-                                                                                    }
-                                                                                  );
-                                                                                }}
-                                                                              />
-                                                                            </div>
-                                                                            <div className="space-y-2">
-                                                                              <Label>Temperature (°C)</Label>
-                                                                              <Input
-                                                                                type="number"
-                                                                                value={config?.temperature || 25}
-                                                                                onChange={(e) => {
-                                                                                  node.data.onLabwareConfigUpdate(
-                                                                                    taskName,
-                                                                                    labwareId,
-                                                                                    {
-                                                                                      ...config,
-                                                                                      temperature: parseInt(e.target.value)
-                                                                                    }
-                                                                                  );
-                                                                                }}
-                                                                              />
-                                                                            </div>
-                                                                            <div className="flex items-center justify-between">
-                                                                              <Label>Sealed</Label>
-                                                                              <Switch
-                                                                                checked={config?.isSealed || false}
-                                                                                onCheckedChange={(checked) => {
-                                                                                  node.data.onLabwareConfigUpdate(
-                                                                                    taskName,
-                                                                                    labwareId,
-                                                                                    {
-                                                                                      ...config,
-                                                                                      isSealed: checked
-                                                                                    }
-                                                                                  );
-                                                                                }}
-                                                                              />
-                                                                            </div>
-                                                                          </div>
-                                                                        </DialogContent>
-                                                                      </Dialog>
-                                                                      <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        className="h-6 w-6"
-                                                                        onClick={() => {
-                                                                          node.data.onLabwareRemove(
-                                                                            taskName,
-                                                                            labwareId
-                                                                          );
-                                                                        }}
-                                                                      >
-                                                                        <XIcon className="h-3 w-3" />
-                                                                      </Button>
-                                                                    </div>
-                                                                  </div>
-
-                                                                  {config && (
-                                                                    <div className="flex flex-wrap gap-1">
-                                                                      <Badge
-                                                                        variant="outline"
-                                                                        className="text-xs"
-                                                                      >
-                                                                        <ThermometerIcon className="h-3 w-3 mr-1" />
-                                                                        {config.temperature}°C
-                                                                      </Badge>
-                                                                      {config.isSealed && (
-                                                                        <Badge
-                                                                          variant="outline"
-                                                                          className="text-xs"
-                                                                        >
-                                                                          <ShieldIcon className="h-3 w-3 mr-1" />
-                                                                          Sealed
-                                                                        </Badge>
-                                                                      )}
-                                                                    </div>
-                                                                  )}
-                                                                </div>
-                                                              );
-                                                            })}
-                                                          </div>
-                                                        </CardContent>
-                                                      )}
-                                                    </Card>
-                                                  );
-                                                })}
-                                              </div>
-                                            </div>
-                                          </CardContent>
-                                        )}
-                                      </Card>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </>
+                        </div>
                       )}
                     </div>
                   </ScrollArea>
@@ -799,7 +474,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                   <Button variant="outline" size="icon" onClick={handleZoomOut}>
                     <MinusIcon className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline"size="icon" onClick={handleZoomIn}>
+                  <Button variant="outline" size="icon" onClick={handleZoomIn}>
                     <PlusIcon className="h-4 w-4" />
                   </Button>
                   <Button variant="outline" size="icon" onClick={() => setShowLeftPanel(!showLeftPanel)}>
