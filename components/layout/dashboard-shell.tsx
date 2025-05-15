@@ -135,7 +135,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 rounded-md px-3 py-3 my-2 text-sm font-medium transition-colors relative",
-                  pathname === item.href || pathname.startsWith(`${item.href}/`)
+                  pathname === item.href 
                     ? "bg-primary text-primary-foreground"
                     : "hover:bg-muted"
                 )}

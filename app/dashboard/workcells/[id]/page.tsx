@@ -99,6 +99,7 @@ export default function WorkcellPage() {
         title: 'Success',
         description: 'Workcell updated successfully',
       });
+      router.back();
     } catch (error) {
       console.error('Error updating workcell:', error);
       toast({
@@ -394,16 +395,17 @@ export default function WorkcellPage() {
                       </div>
                       {newInstrument.driver.name && (
                         <div className="space-y-2">
-                          <Label>Available Tasks</Label>
-                          <div className="space-y-2">
+                          <Label>Available Actions</Label>
+                          <div className="grid grid-cols-2 gap-2 bg-muted/50 p-2 rounded-md">
                             {availableTasks.map(task => (
-                              <div key={task.name} className="p-2 border rounded-lg">
+                              <div key={task.name} className="p-2 border rounded-lg bg-card">
                                 <div className="font-medium">{task.name}</div>
-                                <div className="text-sm text-muted-foreground">{task.description}</div>
+                                {/* <div className="text-sm text-muted-foreground">{task.description}</div> */}
                                 {task.parameters.length > 0 && (
                                   <div className="mt-1 flex gap-1 flex-wrap">
+                                    <span className="text-xs text-muted-foreground mr-1">Params:</span>
                                     {task.parameters.map(param => (
-                                      <Badge key={param} variant="secondary" className="text-xs">
+                                      <Badge key={param} variant="outline" className="text-xs py-0 h-4 px-1.5 font-normal">
                                         {param}
                                       </Badge>
                                     ))}
@@ -441,7 +443,7 @@ export default function WorkcellPage() {
                             </CardDescription>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline">Connected</Badge>
+                            {/* <Badge variant="outline">Connected</Badge> */}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -544,16 +546,17 @@ export default function WorkcellPage() {
                         </div>
                         {driverInfo && (
                           <div className="space-y-2">
-                            <Label>Available Tasks</Label>
-                            <div className="space-y-2">
+                            <Label>Available Actions</Label>
+                            <div className="grid grid-cols-2 gap-2 bg-muted/50 p-2 rounded-md">
                               {driverInfo.tasks.map(task => (
-                                <div key={task.name} className="p-2 border rounded-lg">
+                                <div key={task.name} className="p-2 border rounded-lg bg-card">
                                   <div className="font-medium">{task.name}</div>
-                                  <div className="text-sm text-muted-foreground">{task.description}</div>
+                                  {/* <div className="text-sm text-muted-foreground">{task.description}</div> */}
                                   {task.parameters.length > 0 && (
                                     <div className="mt-1 flex gap-1 flex-wrap">
+                                      <span className="text-xs text-muted-foreground mr-1">Params:</span>
                                       {task.parameters.map(param => (
-                                        <Badge key={param} variant="secondary" className="text-xs">
+                                        <Badge key={param} variant="outline" className="text-xs py-0 h-4 px-1.5 font-normal">
                                           {param}
                                         </Badge>
                                       ))}
@@ -587,21 +590,7 @@ export default function WorkcellPage() {
                               }
                             })}
                           >
-                            Home
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => executeInstrumentAction.mutate({
-                              id: params.id as string,
-                              instrumentId: id,
-                              action: {
-                                action: 'reset',
-                                arguments: {}
-                              }
-                            })}
-                          >
-                            Reset
+                            Execute
                           </Button>
                         </div>
                       </CardContent>

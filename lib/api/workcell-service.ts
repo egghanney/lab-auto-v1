@@ -45,6 +45,29 @@ const mockWorkcells: Workcell[] = [
             ip: '192.168.1.11'
           }
         }
+      },
+      'plate-reader': {
+        id: 'plate-reader',
+        driver: {
+          name: 'PlateReader',
+          version: '2.1.0',
+          config: {
+            ip: '192.168.1.12',
+            mode: 'fluorescence'
+          }
+        }
+      },
+      'centrifuge': {
+        id: 'centrifuge',
+        driver: {
+          name: 'Centrifuge',
+          version: '1.5.0',
+          config: {
+            port: '/dev/ttyUSB1',
+            maxRPM: 5000,
+            capacity: 24
+          }
+        }
       }
     },
     created_at: '2025-02-10T09:15:00.000Z',

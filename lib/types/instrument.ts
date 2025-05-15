@@ -19,13 +19,13 @@ export const driverOptions: DriverOption[] = [
     tasks: [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
-      { name: 'pickup', description: 'Pick up labware from a location', parameters: ['source_position'] },
+      // { name: 'pickup', description: 'Pick up labware from a location', parameters: ['source_position'] },
       { name: 'place', description: 'Place labware at a location', parameters: ['target_position'] },
-      { name: 'home_instrument', description: 'Move to home position', parameters: [] },
-      { name: 'move_to_home', description: 'Return to home position', parameters: [] },
-      { name: 'move_to', description: 'Move to specific coordinates', parameters: ['x', 'y', 'z'] },
-      { name: 'pause_task', description: 'Pause current task', parameters: [] },
-      { name: 'resume_task', description: 'Resume paused task', parameters: [] }
+      // { name: 'home_instrument', description: 'Move to home position', parameters: [] },
+      // { name: 'move_to_home', description: 'Return to home position', parameters: [] },
+      // { name: 'move_to', description: 'Move to specific coordinates', parameters: ['x', 'y', 'z'] },
+      // { name: 'pause_task', description: 'Pause current task', parameters: [] },
+      // { name: 'resume_task', description: 'Resume paused task', parameters: [] }
     ]
   },
   {
@@ -36,13 +36,13 @@ export const driverOptions: DriverOption[] = [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
       { name: 'aspirate_liquid', description: 'Aspirate liquid', parameters: ['volume', 'flow_rate'] },
-      { name: 'dispense_liquid', description: 'Dispense liquid', parameters: ['volume', 'flow_rate'] },
-      { name: 'mix_liquid', description: 'Mix liquid by repeated aspiration/dispense', parameters: ['volume', 'repetitions'] },
-      { name: 'transfer_liquid', description: 'Transfer liquid between positions', parameters: ['volume', 'source', 'destination'] },
-      { name: 'touch_tip', description: 'Touch tip to remove droplets', parameters: ['location'] },
-      { name: 'blow_out', description: 'Blow out any remaining liquid', parameters: [] },
-      { name: 'load_tip', description: 'Load a new pipette tip', parameters: ['tip_location'] },
-      { name: 'eject_tip', description: 'Eject current pipette tip', parameters: ['waste_location'] }
+      // { name: 'dispense_liquid', description: 'Dispense liquid', parameters: ['volume', 'flow_rate'] },
+      // { name: 'mix_liquid', description: 'Mix liquid by repeated aspiration/dispense', parameters: ['volume', 'repetitions'] },
+      // { name: 'transfer_liquid', description: 'Transfer liquid between positions', parameters: ['volume', 'source', 'destination'] },
+      // { name: 'touch_tip', description: 'Touch tip to remove droplets', parameters: ['location'] },
+      // { name: 'blow_out', description: 'Blow out any remaining liquid', parameters: [] },
+      // { name: 'load_tip', description: 'Load a new pipette tip', parameters: ['tip_location'] },
+      // { name: 'eject_tip', description: 'Eject current pipette tip', parameters: ['waste_location'] }
     ]
   },
   {
@@ -53,12 +53,12 @@ export const driverOptions: DriverOption[] = [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
       { name: 'set_temperature', description: 'Set block temperature', parameters: ['temperature', 'hold_time'] },
-      { name: 'run_protocol', description: 'Run thermal profile', parameters: ['profile_name'] },
-      { name: 'heat', description: 'Heat to target temperature', parameters: ['temperature', 'rate'] },
-      { name: 'cool', description: 'Cool to target temperature', parameters: ['temperature', 'rate'] },
-      { name: 'open_lid', description: 'Open the lid', parameters: [] },
-      { name: 'close_lid', description: 'Close the lid', parameters: [] },
-      { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
+      // { name: 'run_protocol', description: 'Run thermal profile', parameters: ['profile_name'] },
+      // { name: 'heat', description: 'Heat to target temperature', parameters: ['temperature', 'rate'] },
+      // { name: 'cool', description: 'Cool to target temperature', parameters: ['temperature', 'rate'] },
+      // { name: 'open_lid', description: 'Open the lid', parameters: [] },
+      // { name: 'close_lid', description: 'Close the lid', parameters: [] },
+      // { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
     ]
   },
   {
@@ -69,10 +69,10 @@ export const driverOptions: DriverOption[] = [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
       { name: 'spin', description: 'Centrifuge samples', parameters: ['speed', 'time'] },
-      { name: 'balance_check', description: 'Check rotor balance', parameters: [] },
-      { name: 'open_door', description: 'Open centrifuge door', parameters: [] },
-      { name: 'close_door', description: 'Close centrifuge door', parameters: [] },
-      { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
+      // { name: 'balance_check', description: 'Check rotor balance', parameters: [] },
+      // { name: 'open_door', description: 'Open centrifuge door', parameters: [] },
+      // { name: 'close_door', description: 'Close centrifuge door', parameters: [] },
+      // { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
     ]
   },
   {
@@ -83,10 +83,10 @@ export const driverOptions: DriverOption[] = [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
       { name: 'load_plate', description: 'Load plate from stack', parameters: ['stack_position'] },
-      { name: 'unload_plate', description: 'Return plate to stack', parameters: ['stack_position'] },
-      { name: 'get_stack_status', description: 'Check stack status', parameters: [] },
-      { name: 'reset_stacks', description: 'Reset all stacks', parameters: [] },
-      { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
+      // { name: 'unload_plate', description: 'Return plate to stack', parameters: ['stack_position'] },
+      // { name: 'get_stack_status', description: 'Check stack status', parameters: [] },
+      // { name: 'reset_stacks', description: 'Reset all stacks', parameters: [] },
+      // { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
     ]
   },
   {
@@ -96,10 +96,10 @@ export const driverOptions: DriverOption[] = [
     tasks: [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
-      { name: 'read_absorbance', description: 'Measure absorbance', parameters: ['wavelength'] },
-      { name: 'read_fluorescence', description: 'Measure fluorescence', parameters: ['excitation', 'emission'] },
-      { name: 'shake', description: 'Shake plate', parameters: ['speed', 'time'] },
-      { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
+      // { name: 'read_absorbance', description: 'Measure absorbance', parameters: ['wavelength'] },
+      // { name: 'read_fluorescence', description: 'Measure fluorescence', parameters: ['excitation', 'emission'] },
+      // { name: 'shake', description: 'Shake plate', parameters: ['speed', 'time'] },
+      // { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
     ]
   }
 ];
