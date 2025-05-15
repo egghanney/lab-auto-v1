@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
   Node,
@@ -135,9 +137,10 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
       if (!instruments?.length) return;
 
       const { clientX, clientY } = event;
+      const reactFlowBounds = event.currentTarget.getBoundingClientRect();
       const position = {
-        x: clientX - 100,
-        y: clientY - 100
+        x: clientX - reactFlowBounds.left,
+        y: clientY - reactFlowBounds.top,
       };
 
       const nodeId = `${group}-${Date.now()}`;
@@ -194,6 +197,69 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
               return node;
             }));
           },
+          onLabwareSelect: (taskName: string, labwareId: string) => {
+            setNodes(nodes => nodes.map(node => {
+              if (node.id === nodeId) {
+                const currentLabware = node.data.selectedLabware[taskName] || [];
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    selectedLabware: {
+                      ...node.data.selectedLabware,
+                      [taskName]: [...currentLabware, labwareId]
+                    }
+                  }
+                };
+              }
+              return node;
+            }));
+          },
+          onLabwareRemove: (taskName: string, labwareId: string) => {
+            setNodes(nodes => nodes.map(node => {
+              if (node.id === nodeId) {
+                const currentLabware = node.data.selectedLabware[taskName] || [];
+                const { [taskName]: removedConfig, ...remainingConfig } = node.data.labwareConfig || {};
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    selectedLabware: {
+                      ...node.data.selectedLabware,
+                      [taskName]: currentLabware.filter(id => id !== labwareId)
+                    },
+                    labwareConfig: {
+                      ...remainingConfig,
+                      [taskName]: Object.fromEntries(
+                        Object.entries(removedConfig || {}).filter(([key]) => key !== labwareId)
+                      )
+                    }
+                  }
+                };
+              }
+              return node;
+            }));
+          },
+          onLabwareConfigUpdate: (taskName: string, labwareId: string, config: any) => {
+            setNodes(nodes => nodes.map(node => {
+              if (node.id === nodeId) {
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    labwareConfig: {
+                      ...node.data.labwareConfig,
+                      [taskName]: {
+                        ...(node.data.labwareConfig?.[taskName] || {}),
+                        [labwareId]: config
+                      }
+                    }
+                  }
+                };
+              }
+              return node;
+            }));
+          },
           onDelete: () => onDeleteNode(nodeId)
         }
       };
@@ -234,6 +300,57 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   }, []);
 
   const isWorkcellSelectionDisabled = nodes.length > 0;
+
+  const getWorkflowJson = useCallback(() => {
+    const workflow: WorkflowConfig = {
+      tasks: {},
+      instruments: {},
+      labware: {},
+      history: {},
+      time_constraints: [],
+      instrument_blocks: []
+    };
+
+    nodes.forEach(node => {
+      const { selectedTasks, selectedLabware, labwareConfig } = node.data;
+      selectedTasks.forEach((taskName: string) => {
+        const taskId = `${node.id}-${taskName}`;
+        workflow.tasks[taskId] = {
+          id: taskId,
+          instrument_type: node.data.instrument.group,
+          duration: 5, // Default duration
+          dependencies: [],
+          arguments: {},
+          action: taskName,
+          required_labware: {}
+        };
+
+        // Add labware configuration
+        if (selectedLabware[taskName]) {
+          selectedLabware[taskName].forEach((labwareId: string) => {
+            const config = labwareConfig?.[taskName]?.[labwareId];
+            if (config) {
+              workflow.tasks[taskId].required_labware[labwareId] = {
+                id: labwareId,
+                initial_slot: config.slot,
+                final_slot: config.slot,
+                quantity: 1
+              };
+            }
+          });
+        }
+      });
+    });
+
+    return workflow;
+  }, [nodes]);
+
+  useEffect(() => {
+    if (showRightPanel) {
+      const workflow = getWorkflowJson();
+      console.log('Current Workflow:', workflow);
+    }
+  }, [showRightPanel, nodes, getWorkflowJson]);
 
   return (
     <ReactFlowProvider>
@@ -370,6 +487,27 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
               </ReactFlow>
             </div>
           </ResizablePanel>
+
+          {showRightPanel && (
+            <>
+              <ResizableHandle withHandle>
+                <GripVerticalIcon className="h-4 w-4" />
+              </ResizableHandle>
+              <ResizablePanel defaultSize={25}>
+                <div className="h-full border-l">
+                  <div className="p-4 border-b bg-card">
+                    <h2 className="text-lg font-semibold">Workflow JSON</h2>
+                    <p className="text-sm text-muted-foreground">Current workflow configuration</p>
+                  </div>
+                  <ScrollArea className="h-[calc(100vh-16rem)]">
+                    <pre className="p-4 text-xs">
+                      {JSON.stringify(getWorkflowJson(), null, 2)}
+                    </pre>
+                  </ScrollArea>
+                </div>
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
       </div>
     </ReactFlowProvider>

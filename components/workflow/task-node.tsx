@@ -1,3 +1,5 @@
+'use client';
+
 import { Handle, NodeProps, Position } from 'reactflow';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
@@ -156,7 +158,7 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {instrument.driver.tasks?.map(task => (
+                {instrument.driver.tasks?.map((task: any) => (
                   <DropdownMenuItem
                     key={task.name}
                     onClick={() => onTaskSelect(task.name)}
@@ -180,7 +182,7 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
           {selectedTasks.length > 0 && (
             <div className="space-y-2">
               {selectedTasks.map(taskName => {
-                const task = instrument.driver.tasks?.find(t => t.name === taskName);
+                const task = instrument.driver.tasks?.find((t: any) => t.name === taskName);
                 const taskLabware = selectedLabware[taskName] || [];
                 
                 return (
@@ -190,7 +192,7 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                         <div className="text-sm font-medium">{taskName}</div>
                         {task?.parameters && task.parameters.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {task.parameters.map(param => (
+                            {task.parameters.map((param: string) => (
                               <Badge key={param} variant="secondary" className="text-xs">
                                 {param}
                               </Badge>
