@@ -43,15 +43,15 @@ export function DashboardShell({ children }: DashboardShellProps) {
       icon: HomeIcon,
     },
     {
+      name: 'Workcells',
+      href: '/dashboard/workcells',
+      icon: ListChecksIcon,
+    },
+    {
       name: 'Workflows',
       href: '/dashboard/workflows',
       icon: ActivityIcon,
       badge: 10,
-    },
-    {
-      name: 'Workcells',
-      href: '/dashboard/workcells',
-      icon: ListChecksIcon,
     },
     {
       name: 'Runs',
