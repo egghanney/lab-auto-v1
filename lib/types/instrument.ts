@@ -4,7 +4,6 @@ export interface DriverTask {
   name: string;
   description: string;
   parameters: string[];
-  group?: string;
 }
 
 export interface DriverOption {
@@ -22,60 +21,15 @@ export const driverOptions: DriverOption[] = [
     description: 'Robotic arm for labware transport',
     group: 'Transport',
     tasks: [
-      { 
-        name: 'initialize_instrument', 
-        description: 'Initialize the instrument', 
-        parameters: [],
-        group: 'Setup'
-      },
-      { 
-        name: 'calibrate_instrument', 
-        description: 'Calibrate the instrument', 
-        parameters: [],
-        group: 'Setup'
-      },
-      { 
-        name: 'pickup', 
-        description: 'Pick up labware from a location', 
-        parameters: ['source_position'],
-        group: 'Movement'
-      },
-      { 
-        name: 'place', 
-        description: 'Place labware at a location', 
-        parameters: ['target_position'],
-        group: 'Movement'
-      },
-      { 
-        name: 'home_instrument', 
-        description: 'Move to home position', 
-        parameters: [],
-        group: 'Movement'
-      },
-      { 
-        name: 'move_to_home', 
-        description: 'Return to home position', 
-        parameters: [],
-        group: 'Movement'
-      },
-      { 
-        name: 'move_to', 
-        description: 'Move to specific coordinates', 
-        parameters: ['x', 'y', 'z'],
-        group: 'Movement'
-      },
-      { 
-        name: 'pause_task', 
-        description: 'Pause current task', 
-        parameters: [],
-        group: 'Control'
-      },
-      { 
-        name: 'resume_task', 
-        description: 'Resume paused task', 
-        parameters: [],
-        group: 'Control'
-      }
+      { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
+      { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
+      { name: 'pickup', description: 'Pick up labware from a location', parameters: ['source_position'] },
+      { name: 'place', description: 'Place labware at a location', parameters: ['target_position'] },
+      { name: 'home_instrument', description: 'Move to home position', parameters: [] },
+      { name: 'move_to_home', description: 'Return to home position', parameters: [] },
+      { name: 'move_to', description: 'Move to specific coordinates', parameters: ['x', 'y', 'z'] },
+      { name: 'pause_task', description: 'Pause current task', parameters: [] },
+      { name: 'resume_task', description: 'Resume paused task', parameters: [] }
     ]
   },
   {
@@ -84,66 +38,16 @@ export const driverOptions: DriverOption[] = [
     description: '8-channel liquid handling robot',
     group: 'Liquid Handlers',
     tasks: [
-      { 
-        name: 'initialize_instrument', 
-        description: 'Initialize the instrument', 
-        parameters: [],
-        group: 'Setup'
-      },
-      { 
-        name: 'calibrate_instrument', 
-        description: 'Calibrate the instrument', 
-        parameters: [],
-        group: 'Setup'
-      },
-      { 
-        name: 'aspirate_liquid', 
-        description: 'Aspirate liquid', 
-        parameters: ['volume', 'flow_rate'],
-        group: 'Liquid Handling'
-      },
-      { 
-        name: 'dispense_liquid', 
-        description: 'Dispense liquid', 
-        parameters: ['volume', 'flow_rate'],
-        group: 'Liquid Handling'
-      },
-      { 
-        name: 'mix_liquid', 
-        description: 'Mix liquid by repeated aspiration/dispense', 
-        parameters: ['volume', 'repetitions'],
-        group: 'Liquid Handling'
-      },
-      { 
-        name: 'transfer_liquid', 
-        description: 'Transfer liquid between positions', 
-        parameters: ['volume', 'source', 'destination'],
-        group: 'Liquid Handling'
-      },
-      { 
-        name: 'touch_tip', 
-        description: 'Touch tip to remove droplets', 
-        parameters: ['location'],
-        group: 'Liquid Handling'
-      },
-      { 
-        name: 'blow_out', 
-        description: 'Blow out any remaining liquid', 
-        parameters: [],
-        group: 'Liquid Handling'
-      },
-      { 
-        name: 'load_tip', 
-        description: 'Load a new pipette tip', 
-        parameters: ['tip_location'],
-        group: 'Tips'
-      },
-      { 
-        name: 'eject_tip', 
-        description: 'Eject current pipette tip', 
-        parameters: ['waste_location'],
-        group: 'Tips'
-      }
+      { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
+      { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
+      { name: 'aspirate_liquid', description: 'Aspirate liquid', parameters: ['volume', 'flow_rate'] },
+      { name: 'dispense_liquid', description: 'Dispense liquid', parameters: ['volume', 'flow_rate'] },
+      { name: 'mix_liquid', description: 'Mix liquid by repeated aspiration/dispense', parameters: ['volume', 'repetitions'] },
+      { name: 'transfer_liquid', description: 'Transfer liquid between positions', parameters: ['volume', 'source', 'destination'] },
+      { name: 'touch_tip', description: 'Touch tip to remove droplets', parameters: ['location'] },
+      { name: 'blow_out', description: 'Blow out any remaining liquid', parameters: [] },
+      { name: 'load_tip', description: 'Load a new pipette tip', parameters: ['tip_location'] },
+      { name: 'eject_tip', description: 'Eject current pipette tip', parameters: ['waste_location'] }
     ]
   },
   {
@@ -152,60 +56,45 @@ export const driverOptions: DriverOption[] = [
     description: 'PCR thermal cycler',
     group: 'Temperature Control',
     tasks: [
-      { 
-        name: 'initialize_instrument', 
-        description: 'Initialize the instrument', 
-        parameters: [],
-        group: 'Setup'
-      },
-      { 
-        name: 'calibrate_instrument', 
-        description: 'Calibrate the instrument', 
-        parameters: [],
-        group: 'Setup'
-      },
-      { 
-        name: 'set_temperature', 
-        description: 'Set block temperature', 
-        parameters: ['temperature', 'hold_time'],
-        group: 'Temperature'
-      },
-      { 
-        name: 'run_protocol', 
-        description: 'Run thermal profile', 
-        parameters: ['profile_name'],
-        group: 'Protocol'
-      },
-      { 
-        name: 'heat', 
-        description: 'Heat to target temperature', 
-        parameters: ['temperature', 'rate'],
-        group: 'Temperature'
-      },
-      { 
-        name: 'cool', 
-        description: 'Cool to target temperature', 
-        parameters: ['temperature', 'rate'],
-        group: 'Temperature'
-      },
-      { 
-        name: 'open_lid', 
-        description: 'Open the lid', 
-        parameters: [],
-        group: 'Control'
-      },
-      { 
-        name: 'close_lid', 
-        description: 'Close the lid', 
-        parameters: [],
-        group: 'Control'
-      },
-      { 
-        name: 'wait', 
-        description: 'Wait for specified duration', 
-        parameters: ['duration'],
-        group: 'Control'
-      }
+      { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
+      { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
+      { name: 'set_temperature', description: 'Set block temperature', parameters: ['temperature', 'hold_time'] },
+      { name: 'run_protocol', description: 'Run thermal profile', parameters: ['profile_name'] },
+      { name: 'heat', description: 'Heat to target temperature', parameters: ['temperature', 'rate'] },
+      { name: 'cool', description: 'Cool to target temperature', parameters: ['temperature', 'rate'] },
+      { name: 'open_lid', description: 'Open the lid', parameters: [] },
+      { name: 'close_lid', description: 'Close the lid', parameters: [] },
+      { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
+    ]
+  },
+  {
+    name: 'Centrifuge',
+    versions: ['1.0.0', '1.5.0'],
+    description: 'Sample processing centrifuge',
+    group: 'Sample Processing',
+    tasks: [
+      { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
+      { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
+      { name: 'spin', description: 'Centrifuge samples', parameters: ['speed', 'time'] },
+      { name: 'balance_check', description: 'Check rotor balance', parameters: [] },
+      { name: 'open_door', description: 'Open centrifuge door', parameters: [] },
+      { name: 'close_door', description: 'Close centrifuge door', parameters: [] },
+      { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
+    ]
+  },
+  {
+    name: 'Stacker',
+    versions: ['1.0.0', '1.1.0'],
+    description: 'Plate storage and stacking system',
+    group: 'Storage',
+    tasks: [
+      { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
+      { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
+      { name: 'load_plate', description: 'Load plate from stack', parameters: ['stack_position'] },
+      { name: 'unload_plate', description: 'Return plate to stack', parameters: ['stack_position'] },
+      { name: 'get_stack_status', description: 'Check stack status', parameters: [] },
+      { name: 'reset_stacks', description: 'Reset all stacks', parameters: [] },
+      { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
     ]
   },
   {
@@ -214,42 +103,12 @@ export const driverOptions: DriverOption[] = [
     description: 'Microplate absorbance reader',
     group: 'Detection',
     tasks: [
-      { 
-        name: 'initialize_instrument', 
-        description: 'Initialize the instrument', 
-        parameters: [],
-        group: 'Setup'
-      },
-      { 
-        name: 'calibrate_instrument', 
-        description: 'Calibrate the instrument', 
-        parameters: [],
-        group: 'Setup'
-      },
-      { 
-        name: 'read_absorbance', 
-        description: 'Measure absorbance', 
-        parameters: ['wavelength'],
-        group: 'Measurement'
-      },
-      { 
-        name: 'read_fluorescence', 
-        description: 'Measure fluorescence', 
-        parameters: ['excitation', 'emission'],
-        group: 'Measurement'
-      },
-      { 
-        name: 'shake', 
-        description: 'Shake plate', 
-        parameters: ['speed', 'time'],
-        group: 'Control'
-      },
-      { 
-        name: 'wait', 
-        description: 'Wait for specified duration', 
-        parameters: ['duration'],
-        group: 'Control'
-      }
+      { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
+      { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
+      { name: 'read_absorbance', description: 'Measure absorbance', parameters: ['wavelength'] },
+      { name: 'read_fluorescence', description: 'Measure fluorescence', parameters: ['excitation', 'emission'] },
+      { name: 'shake', description: 'Shake plate', parameters: ['speed', 'time'] },
+      { name: 'wait', description: 'Wait for specified duration', parameters: ['duration'] }
     ]
   }
 ];
@@ -290,24 +149,7 @@ export const getInstrumentGroups = () => {
   return Array.from(groups).sort();
 };
 
-// Get unique task groups
-export const getTaskGroups = (driverName: string) => {
-  const driver = driverOptions.find(d => d.name === driverName);
-  if (!driver) return [];
-  
-  const groups = new Set(driver.tasks.map(task => task.group || 'Other'));
-  return Array.from(groups).sort();
-};
-
 // Get drivers by group
 export const getDriversByGroup = (group: string) => {
   return driverOptions.filter(driver => driver.group === group);
-};
-
-// Get tasks by group
-export const getTasksByGroup = (driverName: string, group: string) => {
-  const driver = driverOptions.find(d => d.name === driverName);
-  if (!driver) return [];
-  
-  return driver.tasks.filter(task => (task.group || 'Other') === group);
 };
