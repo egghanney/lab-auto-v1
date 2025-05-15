@@ -1,19 +1,29 @@
-import { Workcell, WorkcellInput, ExecuteActionInput } from '@/lib/types';
-
 // Mock data
 const mockWorkcells: Workcell[] = [
   {
     id: '123e4567-e89b-12d3-a456-426614174000',
     name: 'Main Lab Workcell',
     instruments: {
-      'transport-robot': {
-        id: 'transport-robot',
+      'transport-robot-1': {
+        id: 'transport-robot-1',
         driver: {
           name: 'RobotArm',
           version: '1.0.0',
           config: {
             port: '/dev/ttyUSB0',
             speed: 100
+          },
+          group: 'Transport'
+        }
+      },
+      'transport-robot-2': {
+        id: 'transport-robot-2',
+        driver: {
+          name: 'RobotArm',
+          version: '2.0.0',
+          config: {
+            port: '/dev/ttyUSB1',
+            speed: 120
           },
           group: 'Transport'
         }
@@ -60,13 +70,24 @@ const mockWorkcells: Workcell[] = [
     id: '223e4567-e89b-12d3-a456-426614174001',
     name: 'PCR Station',
     instruments: {
-      'pcr-thermocycler': {
-        id: 'pcr-thermocycler',
+      'pcr-thermocycler-1': {
+        id: 'pcr-thermocycler-1',
         driver: {
           name: 'Thermocycler',
           version: '3.0.0',
           config: {
             ip: '192.168.1.11'
+          },
+          group: 'Temperature Control'
+        }
+      },
+      'pcr-thermocycler-2': {
+        id: 'pcr-thermocycler-2',
+        driver: {
+          name: 'Thermocycler',
+          version: '3.0.0',
+          config: {
+            ip: '192.168.1.12'
           },
           group: 'Temperature Control'
         }
