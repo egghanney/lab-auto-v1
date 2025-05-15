@@ -14,7 +14,8 @@ const mockWorkcells: Workcell[] = [
           config: {
             port: '/dev/ttyUSB0',
             speed: 100
-          }
+          },
+          group: 'Transport'
         }
       },
       'liquid-handler': {
@@ -25,7 +26,30 @@ const mockWorkcells: Workcell[] = [
           config: {
             ip: '192.168.1.10',
             channels: 8
-          }
+          },
+          group: 'Liquid Handlers'
+        }
+      },
+      'plate-stacker': {
+        id: 'plate-stacker',
+        driver: {
+          name: 'Stacker',
+          version: '1.0.0',
+          config: {
+            capacity: 20
+          },
+          group: 'Storage'
+        }
+      },
+      'plate-reader': {
+        id: 'plate-reader',
+        driver: {
+          name: 'PlateReader',
+          version: '2.0.0',
+          config: {
+            ip: '192.168.1.12'
+          },
+          group: 'Detection'
         }
       }
     },
@@ -43,7 +67,32 @@ const mockWorkcells: Workcell[] = [
           version: '3.0.0',
           config: {
             ip: '192.168.1.11'
-          }
+          },
+          group: 'Temperature Control'
+        }
+      },
+      'pcr-robot': {
+        id: 'pcr-robot',
+        driver: {
+          name: 'RobotArm',
+          version: '1.0.0',
+          config: {
+            port: '/dev/ttyUSB1',
+            speed: 80
+          },
+          group: 'Transport'
+        }
+      },
+      'centrifuge': {
+        id: 'centrifuge',
+        driver: {
+          name: 'Centrifuge',
+          version: '1.0.0',
+          config: {
+            maxSpeed: 12000,
+            maxTime: 3600
+          },
+          group: 'Sample Processing'
         }
       }
     },
