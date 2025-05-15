@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export interface DriverTask {
   name: string;
   description: string;
@@ -9,6 +11,7 @@ export interface DriverOption {
   versions: string[];
   description: string;
   tasks: DriverTask[];
+  group: string;
 }
 
 export const driverOptions: DriverOption[] = [
@@ -16,6 +19,7 @@ export const driverOptions: DriverOption[] = [
     name: 'RobotArm',
     versions: ['1.0.0', '1.1.0', '2.0.0'],
     description: 'Robotic arm for labware transport',
+    group: 'Transport',
     tasks: [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
@@ -32,6 +36,7 @@ export const driverOptions: DriverOption[] = [
     name: 'PipettingRobot',
     versions: ['2.0.0', '2.1.0', '2.2.0'],
     description: '8-channel liquid handling robot',
+    group: 'Liquid Handlers',
     tasks: [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
@@ -49,6 +54,7 @@ export const driverOptions: DriverOption[] = [
     name: 'Thermocycler',
     versions: ['3.0.0', '3.1.0'],
     description: 'PCR thermal cycler',
+    group: 'Temperature Control',
     tasks: [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
@@ -65,6 +71,7 @@ export const driverOptions: DriverOption[] = [
     name: 'Centrifuge',
     versions: ['1.0.0', '1.5.0'],
     description: 'Sample processing centrifuge',
+    group: 'Sample Processing',
     tasks: [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
@@ -79,6 +86,7 @@ export const driverOptions: DriverOption[] = [
     name: 'Stacker',
     versions: ['1.0.0', '1.1.0'],
     description: 'Plate storage and stacking system',
+    group: 'Storage',
     tasks: [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
@@ -93,6 +101,7 @@ export const driverOptions: DriverOption[] = [
     name: 'PlateReader',
     versions: ['2.0.0', '2.1.0'],
     description: 'Microplate absorbance reader',
+    group: 'Detection',
     tasks: [
       { name: 'initialize_instrument', description: 'Initialize the instrument', parameters: [] },
       { name: 'calibrate_instrument', description: 'Calibrate the instrument', parameters: [] },
@@ -103,3 +112,22 @@ export const driverOptions: DriverOption[] = [
     ]
   }
 ];
+
+// Schema for instrument group
+export const instrumentGroupSchema = z.object({
+  name: z.string().min(1, "Group name is required"),
+  description: z.string().optional(),
+});
+
+export type InstrumentGroup = z.infer<typeof instrumentGroupSchema>;
+
+// Get unique groups from driver options
+export const getInstrumentGroups = () => {
+  const groups = new Set(driverOptions.map(driver => driver.group));
+  return Array.from(groups).sort();
+};
+
+// Get drivers by group
+export const getDriversByGroup = (group: string) => {
+  return driverOptions.filter(driver => driver.group === group);
+};

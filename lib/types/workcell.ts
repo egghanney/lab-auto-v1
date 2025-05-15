@@ -2,16 +2,19 @@ export interface DriverConfig {
   name: string;
   version: string;
   config: Record<string, any>;
+  group?: string;
 }
 
 export interface InstrumentInput {
   id: string;
   driver: DriverConfig;
+  group: string;
 }
 
 export interface Instrument {
   id: string;
   driver: DriverConfig;
+  group: string;
 }
 
 export interface WorkcellInput {
