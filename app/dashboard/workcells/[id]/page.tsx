@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useParams, useRouter } from 'next/navigation';
 import { Workcell } from '@/lib/types';
-import { ChevronLeftIcon, PowerIcon, SaveIcon, TrashIcon, PlusIcon, XIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronDownIcon, ChevronUpIcon, PowerIcon, SaveIcon, TrashIcon, PlusIcon, XIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { driverOptions, getInstrumentGroups, instrumentGroupSchema } from '@/lib/types/instrument';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const driverConfigSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -50,8 +51,11 @@ export default function WorkcellPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [showAddInstrument, setShowAddInstrument] = useState(false);
+  const [openInstruments, setOpenInstruments] = useState<Record<string, boolean>>({});
   const [newInstrument, setNewInstrument] = useState({
     id: '',
+    name: '',
+    group: '',
     driver: {
       name: '',
       version: '',
@@ -156,6 +160,8 @@ export default function WorkcellPage() {
     setShowAddInstrument(false);
     setNewInstrument({
       id: '',
+      name: '',
+      group: '',
       driver: {
         name: '',
         version: '',
@@ -196,6 +202,13 @@ export default function WorkcellPage() {
     }
   };
 
+  const toggleInstrument = (instrumentId: string) => {
+    setOpenInstruments(prev => ({
+      ...prev,
+      [instrumentId]: !prev[instrumentId]
+    }));
+  };
+
   if (isLoading) {
     return <div className="flex justify-center items-center h-64">Loading workcell...</div>;
   }
@@ -203,6 +216,16 @@ export default function WorkcellPage() {
   if (!workcell) {
     return <div>Workcell not found</div>;
   }
+
+  // Group instruments by their group
+  const groupedInstruments = Object.entries(form.watch('instruments')).reduce((acc, [id, instrument]) => {
+    const group = instrument.group || 'Ungrouped';
+    if (!acc[group]) {
+      acc[group] = [];
+    }
+    acc[group].push({ id, ...instrument });
+    return acc;
+  }, {} as Record<string, any[]>);
 
   return (
     <div className="space-y-6">
@@ -488,189 +511,191 @@ export default function WorkcellPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(form.watch('instruments')).map(([id, instrument]) => {
-                  const driverInfo = driverOptions.find(d => d.name === instrument.driver.name);
-                  return (
-                    <Card key={id}>
-                      <CardHeader className="py-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="text-lg">{instrument.id}</CardTitle>
-                            <CardDescription>
-                              {instrument.driver.name} v{instrument.driver.version}
-                              <Badge variant="secondary" className="ml-2">
-                                {instrument.group}
-                              </Badge>
-                            </CardDescription>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">Connected</Badge>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                              onClick={() => handleRemoveInstrument(id)}
-                            >
-                              <XIcon className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid gap-4">
-                          {Object.entries(instrument.driver.config).map(([key, value]) => (
-                            <div key={key} className="flex gap-2">
-                              <Input
-                                placeholder="Key"
-                                value={key}
-                                onChange={(e) => {
-                                  const instruments = form.getValues('instruments');
-                                  const { [key]: oldValue, ...rest } = instruments[id].driver.config;
-                                  form.setValue('instruments', {
-                                    ...instruments,
-                                    [id]: {
-                                      ...instrument,
-                                      driver: {
-                                        ...instrument.driver,
-                                        config: {
-                                          ...rest,
-                                          [e.target.value]: value
-                                        }
-                                      }
-                                    }
-                                  });
-                                }}
-                              />
-                              <Input
-                                placeholder="Value"
-                                value={value as string}
-                                onChange={(e) => {
-                                  const instruments = form.getValues('instruments');
-                                  form.setValue('instruments', {
-                                    ...instruments,
-                                    [id]: {
-                                      ...instrument,
-                                      driver: {
-                                        ...instrument.driver,
-                                        config: {
-                                          ...instrument.driver.config,
-                                          [key]: e.target.value
-                                        }
-                                      }
-                                    }
-                                  });
-                                }}
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  const instruments = form.getValues('instruments');
-                                  const { [key]: removed, ...rest } = instruments[id].driver.config;
-                                  form.setValue('instruments', {
-                                    ...instruments,
-                                    [id]: {
-                                      ...instrument,
-                                      driver: {
-                                        ...instrument.driver,
-                                        config: rest
-                                      }
-                                    }
-                                  });
-                                }}
-                              >
-                                <XIcon className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              const instruments = form.getValues('instruments');
-                              form.setValue('instruments', {
-                                ...instruments,
-                                [id]: {
-                                  ...instrument,
-                                  driver: {
-                                    ...instrument.driver,
-                                    config: {
-                                      ...instrument.driver.config,
-                                      '': ''
-                                    }
-                                  }
-                                }
-                              });
-                            }}
-                          >
-                            Add Config Field
-                          </Button>
-                        </div>
-                        {driverInfo && (
-                          <div className="space-y-2">
-                            <Label>Available Tasks</Label>
-                            <div className="space-y-2">
-                              {driverInfo.tasks.map(task => (
-                                <div key={task.name} className="p-2 border rounded-lg">
-                                  <div className="font-medium">{task.name}</div>
-                                  <div className="text-sm text-muted-foreground">{task.description}</div>
-                                  {task.parameters.length > 0 && (
-                                    <div className="mt-1 flex gap-1 flex-wrap">
-                                      {task.parameters.map(param => (
-                                        <Badge key={param} variant="secondary" className="text-xs">
-                                          {param}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  )}
+                {Object.entries(groupedInstruments).map(([group, instruments]) => (
+                  <Card key={group}>
+                    <CardHeader className="py-4">
+                      <CardTitle className="text-lg flex items-center justify-between">
+                        <span>{group}</span>
+                        <Badge variant="outline">{instruments.length} instruments</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {instruments.map((instrument) => (
+                        <Collapsible
+                          key={instrument.id}
+                          open={openInstruments[instrument.id]}
+                          onOpenChange={() => toggleInstrument(instrument.id)}
+                        >
+                          <Card>
+                            <CollapsibleTrigger asChild>
+                              <CardHeader className="py-4 cursor-pointer hover:bg-muted/50">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <CardTitle className="text-lg">{instrument.id}</CardTitle>
+                                    <CardDescription>
+                                      {instrument.driver.name} v{instrument.driver.version}
+                                      <Badge variant="secondary" className="ml-2">
+                                        {instrument.group}
+                                      </Badge>
+                                    </CardDescription>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline">Connected</Badge>
+                                    <ChevronDownIcon
+                                      className={`h-4 w-4 transition-transform ${
+                                        openInstruments[instrument.id] ? 'transform rotate-180' : ''
+                                      }`}
+                                    />
+                                  </div>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => initialiseInstruments.mutate({
-                              id: params.id as string,
-                              instrumentIds: [id]
-                            })}
-                          >
-                            Initialize
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => executeInstrumentAction.mutate({
-                              id: params.id as string,
-                              instrumentId: id,
-                              action: {
-                                action: 'home',
-                                arguments: {}
-                              }
-                            })}
-                          >
-                            Home
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => executeInstrumentAction.mutate({
-                              id: params.id as string,
-                              instrumentId: id,
-                              action: {
-                                action: 'reset',
-                                arguments: {}
-                              }
-                            })}
-                          >
-                            Reset
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                              </CardHeader>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <CardContent className="space-y-4 pt-0">
+                                <div className="grid gap-4">
+                                  {Object.entries(instrument.driver.config).map(([key, value]) => (
+                                    <div key={key} className="flex gap-2">
+                                      <Input
+                                        placeholder="Key"
+                                        value={key}
+                                        onChange={(e) => {
+                                          const instruments = form.getValues('instruments');
+                                          const { [key]: oldValue, ...rest } = instruments[instrument.id].driver.config;
+                                          form.setValue('instruments', {
+                                            ...instruments,
+                                            [instrument.id]: {
+                                              ...instrument,
+                                              driver: {
+                                                ...instrument.driver,
+                                                config: {
+                                                  ...rest,
+                                                  [e.target.value]: value
+                                                }
+                                              }
+                                            }
+                                          });
+                                        }}
+                                      />
+                                      <Input
+                                        placeholder="Value"
+                                        value={value as string}
+                                        onChange={(e) => {
+                                          const instruments = form.getValues('instruments');
+                                          form.setValue('instruments', {
+                                            ...instruments,
+                                            [instrument.id]: {
+                                              ...instrument,
+                                              driver: {
+                                                ...instrument.driver,
+                                                config: {
+                                                  ...instrument.driver.config,
+                                                  [key]: e.target.value
+                                                }
+                                              }
+                                            }
+                                          });
+                                        }}
+                                      />
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => {
+                                          const instruments = form.getValues('instruments');
+                                          const { [key]: removed, ...rest } = instruments[instrument.id].driver.config;
+                                          form.setValue('instruments', {
+                                            ...instruments,
+                                            [instrument.id]: {
+                                              ...instrument,
+                                              driver: {
+                                                ...instrument.driver,
+                                                config: rest
+                                              }
+                                            }
+                                          });
+                                        }}
+                                      >
+                                        <XIcon className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      const instruments = form.getValues('instruments');
+                                      form.setValue('instruments', {
+                                        ...instruments,
+                                        [instrument.id]: {
+                                          ...instrument,
+                                          driver: {
+                                            ...instrument.driver,
+                                            config: {
+                                              ...instrument.driver.config,
+                                              '': ''
+                                            }
+                                          }
+                                        }
+                                      });
+                                    }}
+                                  >
+                                    Add Config Field
+                                  </Button>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => initialiseInstruments.mutate({
+                                      id: params.id as string,
+                                      instrumentIds: [instrument.id]
+                                    })}
+                                  >
+                                    Initialize
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => executeInstrumentAction.mutate({
+                                      id: params.id as string,
+                                      instrumentId: instrument.id,
+                                      action: {
+                                        action: 'home',
+                                        arguments: {}
+                                      }
+                                    })}
+                                  >
+                                    Home
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => executeInstrumentAction.mutate({
+                                      id: params.id as string,
+                                      instrumentId: instrument.id,
+                                      action: {
+                                        action: 'reset',
+                                        arguments: {}
+                                      }
+                                    })}
+                                  >
+                                    Reset
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="ml-auto hover:text-destructive"
+                                    onClick={() => handleRemoveInstrument(instrument.id)}
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </CollapsibleContent>
+                          </Card>
+                        </Collapsible>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </CardContent>
           </Card>
