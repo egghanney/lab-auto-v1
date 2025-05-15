@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useParams, useRouter } from 'next/navigation';
 import { Workcell } from '@/lib/types';
-import { ChevronLeftIcon, PowerIcon, SaveIcon, TrashIcon, PlusIcon, XIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronDownIcon, ChevronUpIcon, PowerIcon, SaveIcon, TrashIcon, PlusIcon, XIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { driverOptions, getInstrumentGroups, instrumentGroupSchema } from '@/lib/types/instrument';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const driverConfigSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -58,6 +63,7 @@ export default function WorkcellPage() {
       config: {} as Record<string, any>
     }
   });
+  const [expandedInstruments, setExpandedInstruments] = useState<Set<string>>(new Set());
 
   const instrumentGroups = getInstrumentGroups();
   const [showGroupDialog, setShowGroupDialog] = useState(false);
@@ -168,6 +174,11 @@ export default function WorkcellPage() {
     const instruments = form.getValues('instruments');
     const { [instrumentId]: removed, ...rest } = instruments;
     form.setValue('instruments', rest);
+    setExpandedInstruments(prev => {
+      const next = new Set(prev);
+      next.delete(instrumentId);
+      return next;
+    });
   };
 
   const handleDelete = async () => {
@@ -194,6 +205,18 @@ export default function WorkcellPage() {
         variant: 'destructive',
       });
     }
+  };
+
+  const toggleInstrument = (instrumentId: string) => {
+    setExpandedInstruments(prev => {
+      const next = new Set(prev);
+      if (next.has(instrumentId)) {
+        next.delete(instrumentId);
+      } else {
+        next.add(instrumentId);
+      }
+      return next;
+    });
   };
 
   if (isLoading) {
@@ -490,18 +513,34 @@ export default function WorkcellPage() {
               <div className="space-y-4">
                 {Object.entries(form.watch('instruments')).map(([id, instrument]) => {
                   const driverInfo = driverOptions.find(d => d.name === instrument.driver.name);
+                  const isExpanded = expandedInstruments.has(id);
+                  
                   return (
                     <Card key={id}>
                       <CardHeader className="py-4">
                         <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="text-lg">{instrument.id}</CardTitle>
-                            <CardDescription>
-                              {instrument.driver.name} v{instrument.driver.version}
-                              <Badge variant="secondary" className="ml-2">
-                                {instrument.group}
-                              </Badge>
-                            </CardDescription>
+                          <div className="flex items-center gap-4">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => toggleInstrument(id)}
+                            >
+                              {isExpanded ? (
+                                <ChevronUpIcon className="h-4 w-4" />
+                              ) : (
+                                <ChevronDownIcon className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <div>
+                              <CardTitle className="text-lg">{instrument.id}</CardTitle>
+                              <CardDescription>
+                                {instrument.driver.name} v{instrument.driver.version}
+                                <Badge variant="secondary" className="ml-2">
+                                  {instrument.group}
+                                </Badge>
+                              </CardDescription>
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="outline">Connected</Badge>
@@ -516,35 +555,78 @@ export default function WorkcellPage() {
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid gap-4">
-                          {Object.entries(instrument.driver.config).map(([key, value]) => (
-                            <div key={key} className="flex gap-2">
-                              <Input
-                                placeholder="Key"
-                                value={key}
-                                onChange={(e) => {
-                                  const instruments = form.getValues('instruments');
-                                  const { [key]: oldValue, ...rest } = instruments[id].driver.config;
-                                  form.setValue('instruments', {
-                                    ...instruments,
-                                    [id]: {
-                                      ...instrument,
-                                      driver: {
-                                        ...instrument.driver,
-                                        config: {
-                                          ...rest,
-                                          [e.target.value]: value
+                      <Collapsible open={isExpanded}>
+                        <CollapsibleContent>
+                          <CardContent className="space-y-4">
+                            <div className="grid gap-4">
+                              {Object.entries(instrument.driver.config).map(([key, value]) => (
+                                <div key={key} className="flex gap-2">
+                                  <Input
+                                    placeholder="Key"
+                                    value={key}
+                                    onChange={(e) => {
+                                      const instruments = form.getValues('instruments');
+                                      const { [key]: oldValue, ...rest } = instruments[id].driver.config;
+                                      form.setValue('instruments', {
+                                        ...instruments,
+                                        [id]: {
+                                          ...instrument,
+                                          driver: {
+                                            ...instrument.driver,
+                                            config: {
+                                              ...rest,
+                                              [e.target.value]: value
+                                            }
+                                          }
                                         }
-                                      }
-                                    }
-                                  });
-                                }}
-                              />
-                              <Input
-                                placeholder="Value"
-                                value={value as string}
-                                onChange={(e) => {
+                                      });
+                                    }}
+                                  />
+                                  <Input
+                                    placeholder="Value"
+                                    value={value as string}
+                                    onChange={(e) => {
+                                      const instruments = form.getValues('instruments');
+                                      form.setValue('instruments', {
+                                        ...instruments,
+                                        [id]: {
+                                          ...instrument,
+                                          driver: {
+                                            ...instrument.driver,
+                                            config: {
+                                              ...instrument.driver.config,
+                                              [key]: e.target.value
+                                            }
+                                          }
+                                        }
+                                      });
+                                    }}
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      const instruments = form.getValues('instruments');
+                                      const { [key]: removed, ...rest } = instruments[id].driver.config;
+                                      form.setValue('instruments', {
+                                        ...instruments,
+                                        [id]: {
+                                          ...instrument,
+                                          driver: {
+                                            ...instrument.driver,
+                                            config: rest
+                                          }
+                                        }
+                                      });
+                                    }}
+                                  >
+                                    <XIcon className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                              <Button
+                                variant="outline"
+                                onClick={() => {
                                   const instruments = form.getValues('instruments');
                                   form.setValue('instruments', {
                                     ...instruments,
@@ -554,120 +636,81 @@ export default function WorkcellPage() {
                                         ...instrument.driver,
                                         config: {
                                           ...instrument.driver.config,
-                                          [key]: e.target.value
+                                          '': ''
                                         }
                                       }
                                     }
                                   });
                                 }}
-                              />
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  const instruments = form.getValues('instruments');
-                                  const { [key]: removed, ...rest } = instruments[id].driver.config;
-                                  form.setValue('instruments', {
-                                    ...instruments,
-                                    [id]: {
-                                      ...instrument,
-                                      driver: {
-                                        ...instrument.driver,
-                                        config: rest
-                                      }
-                                    }
-                                  });
-                                }}
                               >
-                                <XIcon className="h-4 w-4" />
+                                Add Config Field
                               </Button>
                             </div>
-                          ))}
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              const instruments = form.getValues('instruments');
-                              form.setValue('instruments', {
-                                ...instruments,
-                                [id]: {
-                                  ...instrument,
-                                  driver: {
-                                    ...instrument.driver,
-                                    config: {
-                                      ...instrument.driver.config,
-                                      '': ''
-                                    }
-                                  }
-                                }
-                              });
-                            }}
-                          >
-                            Add Config Field
-                          </Button>
-                        </div>
-                        {driverInfo && (
-                          <div className="space-y-2">
-                            <Label>Available Tasks</Label>
-                            <div className="space-y-2">
-                              {driverInfo.tasks.map(task => (
-                                <div key={task.name} className="p-2 border rounded-lg">
-                                  <div className="font-medium">{task.name}</div>
-                                  <div className="text-sm text-muted-foreground">{task.description}</div>
-                                  {task.parameters.length > 0 && (
-                                    <div className="mt-1 flex gap-1 flex-wrap">
-                                      {task.parameters.map(param => (
-                                        <Badge key={param} variant="secondary" className="text-xs">
-                                          {param}
-                                        </Badge>
-                                      ))}
+                            {driverInfo && (
+                              <div className="space-y-2">
+                                <Label>Available Tasks</Label>
+                                <div className="space-y-2">
+                                  {driverInfo.tasks.map(task => (
+                                    <div key={task.name} className="p-2 border rounded-lg">
+                                      <div className="font-medium">{task.name}</div>
+                                      <div className="text-sm text-muted-foreground">{task.description}</div>
+                                      {task.parameters.length > 0 && (
+                                        <div className="mt-1 flex gap-1 flex-wrap">
+                                          {task.parameters.map(param => (
+                                            <Badge key={param} variant="secondary" className="text-xs">
+                                              {param}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
+                                  ))}
                                 </div>
-                              ))}
+                              </div>
+                            )}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => initialiseInstruments.mutate({
+                                  id: params.id as string,
+                                  instrumentIds: [id]
+                                })}
+                              >
+                                Initialize
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => executeInstrumentAction.mutate({
+                                  id: params.id as string,
+                                  instrumentId: id,
+                                  action: {
+                                    action: 'home',
+                                    arguments: {}
+                                  }
+                                })}
+                              >
+                                Home
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => executeInstrumentAction.mutate({
+                                  id: params.id as string,
+                                  instrumentId: id,
+                                  action: {
+                                    action: 'reset',
+                                    arguments: {}
+                                  }
+                                })}
+                              >
+                                Reset
+                              </Button>
                             </div>
-                          </div>
-                        )}
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => initialiseInstruments.mutate({
-                              id: params.id as string,
-                              instrumentIds: [id]
-                            })}
-                          >
-                            Initialize
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => executeInstrumentAction.mutate({
-                              id: params.id as string,
-                              instrumentId: id,
-                              action: {
-                                action: 'home',
-                                arguments: {}
-                              }
-                            })}
-                          >
-                            Home
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => executeInstrumentAction.mutate({
-                              id: params.id as string,
-                              instrumentId: id,
-                              action: {
-                                action: 'reset',
-                                arguments: {}
-                              }
-                            })}
-                          >
-                            Reset
-                          </Button>
-                        </div>
-                      </CardContent>
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Collapsible>
                     </Card>
                   );
                 })}
