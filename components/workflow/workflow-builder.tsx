@@ -20,7 +20,6 @@ import 'reactflow/dist/style.css';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import TaskNode from './task-node';
-import TaskConfigPanel from './task-config-panel';
 import { 
   ChevronDownIcon,
   ChevronRightIcon,
@@ -73,6 +72,8 @@ const nodeTypes: NodeTypes = {
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
 
+const STORAGE_KEY = 'workflow_builder_state';
+
 const edgeOptions = {
   animated: true,
   style: {
@@ -86,9 +87,12 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(false);
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Node | null>(null);
   const [selectedWorkcellId, setSelectedWorkcellId] = useState<string>('');
+  const [selectedInstrumentId, setSelectedInstrumentId] = useState<string>('');
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [isTaskListOpen, setIsTaskListOpen] = useState(true);
+  const [openTaskLabware, setOpenTaskLabware] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -157,6 +161,105 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
           selectedTasks: [],
           selectedLabware: {},
           labwareConfig: {},
+          onTaskSelect: (taskName: string) => {
+            setNodes(nodes => nodes.map(node => {
+              if (node.id === nodeId) {
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    selectedTasks: [...(node.data.selectedTasks || []), taskName],
+                    selectedLabware: {
+                      ...node.data.selectedLabware,
+                      [taskName]: []
+                    }
+                  }
+                };
+              }
+              return node;
+            }));
+          },
+          onTaskRemove: (taskName: string) => {
+            setNodes(nodes => nodes.map(node => {
+              if (node.id === nodeId) {
+                const { [taskName]: removed, ...remainingLabware } = node.data.selectedLabware;
+                const { [taskName]: removedConfig, ...remainingConfig } = node.data.labwareConfig || {};
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    selectedTasks: node.data.selectedTasks.filter(t => t !== taskName),
+                    selectedLabware: remainingLabware,
+                    labwareConfig: remainingConfig
+                  }
+                };
+              }
+              return node;
+            }));
+          },
+          onLabwareSelect: (taskName: string, labwareId: string) => {
+            setNodes(nodes => nodes.map(node => {
+              if (node.id === nodeId) {
+                const currentLabware = node.data.selectedLabware[taskName] || [];
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    selectedLabware: {
+                      ...node.data.selectedLabware,
+                      [taskName]: [...currentLabware, labwareId]
+                    }
+                  }
+                };
+              }
+              return node;
+            }));
+          },
+          onLabwareRemove: (taskName: string, labwareId: string) => {
+            setNodes(nodes => nodes.map(node => {
+              if (node.id === nodeId) {
+                const currentLabware = node.data.selectedLabware[taskName] || [];
+                const { [taskName]: removedConfig, ...remainingConfig } = node.data.labwareConfig || {};
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    selectedLabware: {
+                      ...node.data.selectedLabware,
+                      [taskName]: currentLabware.filter(id => id !== labwareId)
+                    },
+                    labwareConfig: {
+                      ...remainingConfig,
+                      [taskName]: Object.fromEntries(
+                        Object.entries(removedConfig || {}).filter(([key]) => key !== labwareId)
+                      )
+                    }
+                  }
+                };
+              }
+              return node;
+            }));
+          },
+          onLabwareConfigUpdate: (taskName: string, labwareId: string, config: any) => {
+            setNodes(nodes => nodes.map(node => {
+              if (node.id === nodeId) {
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    labwareConfig: {
+                      ...node.data.labwareConfig,
+                      [taskName]: {
+                        ...(node.data.labwareConfig?.[taskName] || {}),
+                        [labwareId]: config
+                      }
+                    }
+                  }
+                };
+              }
+              return node;
+            }));
+          },
           onDelete: () => onDeleteNode(nodeId)
         }
       };
@@ -177,120 +280,16 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-    setSelectedNode(node);
+    setSelectedTask(node);
   }, []);
 
   const onDeleteNode = useCallback((nodeId: string) => {
     setNodes(nodes => nodes.filter(node => node.id !== nodeId));
     setEdges(edges => edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId));
-    if (selectedNode?.id === nodeId) {
-      setSelectedNode(null);
+    if (selectedTask?.id === nodeId) {
+      setSelectedTask(null);
     }
-  }, [setNodes, setEdges, selectedNode]);
-
-  const handleTaskSelect = useCallback((nodeId: string, taskName: string) => {
-    setNodes(nodes => nodes.map(node => {
-      if (node.id === nodeId) {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            selectedTasks: [...(node.data.selectedTasks || []), taskName],
-            selectedLabware: {
-              ...node.data.selectedLabware,
-              [taskName]: []
-            }
-          }
-        };
-      }
-      return node;
-    }));
-  }, [setNodes]);
-
-  const handleTaskRemove = useCallback((nodeId: string, taskName: string) => {
-    setNodes(nodes => nodes.map(node => {
-      if (node.id === nodeId) {
-        const { [taskName]: removed, ...remainingLabware } = node.data.selectedLabware;
-        const { [taskName]: removedConfig, ...remainingConfig } = node.data.labwareConfig || {};
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            selectedTasks: node.data.selectedTasks.filter(t => t !== taskName),
-            selectedLabware: remainingLabware,
-            labwareConfig: remainingConfig
-          }
-        };
-      }
-      return node;
-    }));
-  }, [setNodes]);
-
-  const handleLabwareSelect = useCallback((nodeId: string, taskName: string, labwareId: string) => {
-    setNodes(nodes => nodes.map(node => {
-      if (node.id === nodeId) {
-        const currentLabware = node.data.selectedLabware[taskName] || [];
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            selectedLabware: {
-              ...node.data.selectedLabware,
-              [taskName]: [...currentLabware, labwareId]
-            }
-          }
-        };
-      }
-      return node;
-    }));
-  }, [setNodes]);
-
-  const handleLabwareRemove = useCallback((nodeId: string, taskName: string, labwareId: string) => {
-    setNodes(nodes => nodes.map(node => {
-      if (node.id === nodeId) {
-        const currentLabware = node.data.selectedLabware[taskName] || [];
-        const { [taskName]: removedConfig, ...remainingConfig } = node.data.labwareConfig || {};
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            selectedLabware: {
-              ...node.data.selectedLabware,
-              [taskName]: currentLabware.filter(id => id !== labwareId)
-            },
-            labwareConfig: {
-              ...remainingConfig,
-              [taskName]: Object.fromEntries(
-                Object.entries(removedConfig || {}).filter(([key]) => key !== labwareId)
-              )
-            }
-          }
-        };
-      }
-      return node;
-    }));
-  }, [setNodes]);
-
-  const handleLabwareConfigUpdate = useCallback((nodeId: string, taskName: string, labwareId: string, config: any) => {
-    setNodes(nodes => nodes.map(node => {
-      if (node.id === nodeId) {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            labwareConfig: {
-              ...node.data.labwareConfig,
-              [taskName]: {
-                ...(node.data.labwareConfig?.[taskName] || {}),
-                [labwareId]: config
-              }
-            }
-          }
-        };
-      }
-      return node;
-    }));
-  }, [setNodes]);
+  }, [setNodes, setEdges, selectedTask]);
 
   const handleZoomIn = useCallback(() => {
     setZoomLevel(z => Math.min(z + 0.2, 2));
@@ -299,6 +298,8 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const handleZoomOut = useCallback(() => {
     setZoomLevel(z => Math.max(z - 0.2, 0.2));
   }, []);
+
+  const isWorkcellSelectionDisabled = nodes.length > 0;
 
   const getWorkflowJson = useCallback(() => {
     const workflow: WorkflowConfig = {
@@ -317,13 +318,14 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
         workflow.tasks[taskId] = {
           id: taskId,
           instrument_type: node.data.instrument.group,
-          duration: 5,
+          duration: 5, // Default duration
           dependencies: [],
           arguments: {},
           action: taskName,
           required_labware: {}
         };
 
+        // Add labware configuration
         if (selectedLabware[taskName]) {
           selectedLabware[taskName].forEach((labwareId: string) => {
             const config = labwareConfig?.[taskName]?.[labwareId];
@@ -343,7 +345,12 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
     return workflow;
   }, [nodes]);
 
-  const isWorkcellSelectionDisabled = nodes.length > 0;
+  useEffect(() => {
+    if (showRightPanel) {
+      const workflow = getWorkflowJson();
+      console.log('Current Workflow:', workflow);
+    }
+  }, [showRightPanel, nodes, getWorkflowJson]);
 
   return (
     <ReactFlowProvider>
@@ -358,71 +365,60 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                     <p className="text-sm text-muted-foreground">Design your automation workflow</p>
                   </div>
                   <ScrollArea className="h-[calc(100vh-16rem)]">
-                    {selectedNode ? (
-                      <TaskConfigPanel
-                        selectedNode={selectedNode}
-                        onTaskSelect={handleTaskSelect}
-                        onTaskRemove={handleTaskRemove}
-                        onLabwareSelect={handleLabwareSelect}
-                        onLabwareRemove={handleLabwareRemove}
-                        onLabwareConfigUpdate={handleLabwareConfigUpdate}
-                      />
-                    ) : (
-                      <div className="p-4 space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Select Workcell</label>
-                          <Select 
-                            value={selectedWorkcellId} 
-                            onValueChange={setSelectedWorkcellId}
-                            disabled={isWorkcellSelectionDisabled}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choose a workcell" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {workcells.map((workcell) => (
-                                <SelectItem key={workcell.id} value={workcell.id}>
-                                  {workcell.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                    <div className="p-4 space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Select Workcell</label>
+                        <Select 
+                          value={selectedWorkcellId} 
+                          onValueChange={setSelectedWorkcellId}
+                          disabled={isWorkcellSelectionDisabled}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a workcell" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {workcells.map((workcell) => (
+                              <SelectItem key={workcell.id} value={workcell.id}>
+                                {workcell.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                        {selectedWorkcell && (
-                          <div className="space-y-4">
-                            <Separator />
+                      {selectedWorkcell && (
+                        <div className="space-y-4">
+                          <Separator />
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Instrument Groups</label>
                             <div className="space-y-2">
-                              <label className="text-sm font-medium">Instrument Groups</label>
-                              <div className="space-y-2">
-                                {instrumentGroups.map(group => (
-                                  <Card
-                                    key={group}
-                                    draggable
-                                    onDragStart={(e) => onDragStart(e, group)}
-                                    className="cursor-move hover:shadow-md transition-all"
-                                  >
-                                    <CardHeader className="p-3">
-                                      <CardTitle className="text-sm flex items-center justify-between">
-                                        <span>{group}</span>
-                                        <Badge variant="secondary">
-                                          {instrumentsByGroup[group]?.length || 0} instruments
-                                        </Badge>
-                                      </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-3">
-                                      <div className="text-xs text-muted-foreground">
-                                        Drag to add to workflow
-                                      </div>
-                                    </CardContent>
-                                  </Card>
-                                ))}
-                              </div>
+                              {instrumentGroups.map(group => (
+                                <Card
+                                  key={group}
+                                  draggable
+                                  onDragStart={(e) => onDragStart(e, group)}
+                                  className="cursor-move hover:shadow-md transition-all"
+                                >
+                                  <CardHeader className="p-3">
+                                    <CardTitle className="text-sm flex items-center justify-between">
+                                      <span>{group}</span>
+                                      <Badge variant="secondary">
+                                        {instrumentsByGroup[group]?.length || 0} instruments
+                                      </Badge>
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent className="p-3">
+                                    <div className="text-xs text-muted-foreground">
+                                      Drag to add to workflow
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
                             </div>
                           </div>
-                        )}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </ScrollArea>
                 </div>
               </ResizablePanel>
@@ -453,7 +449,6 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                 fitView
               >
                 <Background 
-                 
                   variant="dots"
                   gap={12}
                   size={1}
