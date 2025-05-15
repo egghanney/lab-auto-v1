@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 export interface LabwareLocation {
   instrument_id: string;
   slot: number;
@@ -7,41 +5,59 @@ export interface LabwareLocation {
 
 export interface Labware {
   id: string;
-  name: string;
   starting_location: LabwareLocation;
 }
 
 export interface TaskLabware {
   id: string;
-  name: string;
   initial_slot: number;
   final_slot: number;
   quantity: number;
 }
 
-export interface BaseAction {
+export interface BaseTask {
   id: string;
-  name: string;
-  instrument_group: string;
+  instrument_type: string;
   duration: number;
   dependencies: string[];
-  parameters: Record<string, any>;
+  arguments: Record<string, any>;
 }
 
-export interface ActionWithLabware extends BaseAction {
+export interface PickupTask extends BaseTask {
+  labware_id: string;
+  destination_slot: number;
+  source_task: string | null;
+}
+
+export interface DropoffTask extends BaseTask {
+  labware_id: string;
+  destination_task: string;
+}
+
+export interface LabwareMove {
+  pickup_task: string;
+  dropoff_task: string;
+}
+
+export interface MoveTask extends BaseTask {
+  labware_moves: LabwareMove[];
+}
+
+export interface ActionTask extends BaseTask {
+  action: string;
   required_labware: Record<string, TaskLabware>;
 }
 
-export type Action = BaseAction | ActionWithLabware;
+export type Task = PickupTask | DropoffTask | MoveTask | ActionTask;
 
-export interface WorkflowInstrumentGroup {
+export interface WorkflowInstrument {
   id: string;
-  name: string;
-  instruments: string[];
+  type: string;
+  capacity: number;
 }
 
 export interface History {
-  action_id: string;
+  task_id: string;
   instrument_id: string;
   start: number;
   end: number;
@@ -49,29 +65,33 @@ export interface History {
 
 export interface TimeConstraint {
   type: 'START_TO_START' | 'START_TO_END' | 'END_TO_START' | 'END_TO_END';
-  start_action: string;
-  end_action: string;
+  start_task: string;
+  end_task: string;
   duration: number;
 }
 
+export interface InstrumentBlock {
+  start_task: string;
+  end_task: string;
+}
+
 export interface WorkflowConfig {
-  actions: Record<string, Action>;
-  instrument_groups: Record<string, WorkflowInstrumentGroup>;
+  tasks: Record<string, Task>;
+  instruments: Record<string, WorkflowInstrument>;
   labware: Record<string, Labware>;
   history: Record<string, History>;
   time_constraints: TimeConstraint[];
+  instrument_blocks: InstrumentBlock[];
 }
 
 export interface WorkflowInput {
   name: string;
-  workcell_id: string;
   config: WorkflowConfig;
 }
 
 export interface Workflow {
   id: string;
   name: string;
-  workcell_id: string;
   config: WorkflowConfig;
   created_at: string;
   updated_at: string;
@@ -82,20 +102,9 @@ export interface WorkflowListResponse {
   total: number;
 }
 
-export const actionSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  instrument_group: z.string(),
-  duration: z.number(),
-  dependencies: z.array(z.string()),
-  parameters: z.record(z.any()),
-  required_labware: z.record(z.object({
-    id: z.string(),
-    name: z.string(),
-    initial_slot: z.number(),
-    final_slot: z.number(),
-    quantity: z.number().default(1),
-  })).optional(),
-});
-
-export type ActionSchema = z.infer<typeof actionSchema>;
+export interface TaskSchedule {
+  task_id: string;
+  instrument_id: string;
+  start: number;
+  end: number;
+}
