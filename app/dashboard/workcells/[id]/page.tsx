@@ -24,9 +24,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { driverOptions } from '@/lib/types/instrument';
+import { driverOptions, getInstrumentGroups, instrumentGroupSchema } from '@/lib/types/instrument';
 
-// Schema matches API payload structure
 const driverConfigSchema = z.object({
   name: z.string().min(1, "Name is required"),
   version: z.string().min(1, "Version is required"),
@@ -59,6 +58,10 @@ export default function WorkcellPage() {
       config: {} as Record<string, any>
     }
   });
+
+  const instrumentGroups = getInstrumentGroups();
+  const [showGroupDialog, setShowGroupDialog] = useState(false);
+  const [newGroup, setNewGroup] = useState({ name: '', description: '' });
 
   const {
     workcells,
@@ -109,15 +112,31 @@ export default function WorkcellPage() {
     }
   };
 
-  // Get available versions for selected driver
   const availableVersions = driverOptions.find(
     driver => driver.name === newInstrument.driver.name
   )?.versions || [];
 
-  // Get available tasks for selected driver
   const availableTasks = driverOptions.find(
     driver => driver.name === newInstrument.driver.name
   )?.tasks || [];
+
+  const handleCreateGroup = () => {
+    try {
+      instrumentGroupSchema.parse(newGroup);
+      setShowGroupDialog(false);
+      setNewGroup({ name: '', description: '' });
+      toast({
+        title: 'Success',
+        description: 'Instrument group created successfully',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Invalid group details',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleAddInstrument = () => {
     if (!newInstrument.id || !newInstrument.driver.name || !newInstrument.driver.version) {
@@ -254,18 +273,55 @@ export default function WorkcellPage() {
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
-                        <Label>Instrument ID</Label>
+                        <Label htmlFor="instrumentId">Instrument ID</Label>
                         <Input
+                          id="instrumentId"
                           value={newInstrument.id}
-                          onChange={(e) => setNewInstrument({
-                            ...newInstrument,
-                            id: e.target.value
-                          })}
+                          onChange={(e) => setNewInstrument({ ...newInstrument, id: e.target.value })}
                           placeholder="Enter instrument ID"
                         />
                       </div>
+                      
                       <div className="space-y-2">
-                        <Label>Driver</Label>
+                        <Label>Instrument Group</Label>
+                        <div className="flex gap-2">
+                          <Select
+                            value={newInstrument.group}
+                            onValueChange={(value) => {
+                              setNewInstrument({
+                                ...newInstrument,
+                                group: value,
+                                driver: {
+                                  ...newInstrument.driver,
+                                  name: '',
+                                  version: '',
+                                  config: {}
+                                }
+                              });
+                            }}
+                          >
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Select group" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {instrumentGroups.map(group => (
+                                <SelectItem key={group} value={group}>
+                                  {group}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowGroupDialog(true)}
+                          >
+                            New Group
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="type">Driver</Label>
                         <Select
                           value={newInstrument.driver.name}
                           onValueChange={(value) => setNewInstrument({
@@ -273,25 +329,29 @@ export default function WorkcellPage() {
                             driver: {
                               ...newInstrument.driver,
                               name: value,
-                              version: '' // Reset version when driver changes
+                              version: ''
                             }
                           })}
+                          disabled={!newInstrument.group}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select driver" />
                           </SelectTrigger>
                           <SelectContent>
-                            {driverOptions.map(driver => (
-                              <SelectItem key={driver.name} value={driver.name}>
-                                <div>
-                                  <div>{driver.name}</div>
-                                  <div className="text-xs text-muted-foreground">{driver.description}</div>
-                                </div>
-                              </SelectItem>
-                            ))}
+                            {driverOptions
+                              .filter(driver => driver.group === newInstrument.group)
+                              .map(driver => (
+                                <SelectItem key={driver.name} value={driver.name}>
+                                  <div>
+                                    <div>{driver.name}</div>
+                                    <div className="text-xs text-muted-foreground">{driver.description}</div>
+                                  </div>
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       </div>
+
                       <div className="space-y-2">
                         <Label>Version</Label>
                         <Select
@@ -438,6 +498,9 @@ export default function WorkcellPage() {
                             <CardTitle className="text-lg">{instrument.id}</CardTitle>
                             <CardDescription>
                               {instrument.driver.name} v{instrument.driver.version}
+                              <Badge variant="secondary" className="ml-2">
+                                {instrument.group}
+                              </Badge>
                             </CardDescription>
                           </div>
                           <div className="flex items-center gap-2">
@@ -613,6 +676,38 @@ export default function WorkcellPage() {
           </Card>
         </form>
       </Form>
+
+      <Dialog open={showGroupDialog} onOpenChange={setShowGroupDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Instrument Group</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Group Name</Label>
+              <Input
+                value={newGroup.name}
+                onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
+                placeholder="Enter group name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                value={newGroup.description}
+                onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
+                placeholder="Enter group description"
+              />
+            </div>
+            <Button 
+              className="w-full" 
+              onClick={handleCreateGroup}
+            >
+              Create Group
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
