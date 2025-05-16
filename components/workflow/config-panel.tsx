@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, ThermometerIcon, ShieldIcon, Settings2Icon, ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, ThermometerIcon, ShieldIcon, Settings2Icon, ChevronDownIcon, ChevronRightIcon, MoveIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -120,7 +120,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
 
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-[calc(100vh-16rem)]">
-            <TabsContent value="tasks" className="p-4 space-y-4 min-h-full">
+            <TabsContent value="tasks" className="p-4 space-y-4">
               <div className="space-y-2">
                 {availableTasks.map(task => (
                   <Card
@@ -128,14 +128,16 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                     draggable
                     onDragStart={(e) => handleDragStart(e, task)}
                     className={cn(
-                      "relative transition-colors cursor-move",
+                      "relative transition-all duration-200 cursor-move group",
                       selectedTasks.includes(task.name) && "bg-muted"
                     )}
                   >
                     <CardHeader className="py-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <GripIcon className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                            <MoveIcon className="h-5 w-5 group-hover:animate-pulse" />
+                          </div>
                           <CardTitle className="text-sm">{task.name}</CardTitle>
                         </div>
                         <Button
@@ -160,19 +162,26 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                       {task.parameters.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {task.parameters.map(param => (
-                            <Badge key={param} variant="secondary" className="text-xs">
+                            <Badge 
+                              key={param} 
+                              variant="secondary" 
+                              className="text-xs transition-colors hover:bg-primary/20"
+                            >
                               {param}
                             </Badge>
                           ))}
                         </div>
                       )}
                     </CardContent>
+                    <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute inset-0 border-2 border-dashed border-primary/20 rounded-lg" />
+                    </div>
                   </Card>
                 ))}
               </div>
             </TabsContent>
 
-            <TabsContent value="labware" className="p-4 space-y-4 min-h-full">
+            <TabsContent value="labware" className="p-4 space-y-4">
               {selectedTasks.map(taskName => {
                 const task = availableTasks.find(t => t.name === taskName);
                 const taskLabware = selectedLabware[taskName] || [];
@@ -212,12 +221,15 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                                   draggable
                                   onDragStart={(e) => handleLabwareDragStart(e, { id: labware.id, taskName })}
                                   className={cn(
-                                    "flex items-center justify-between p-3 rounded-lg border cursor-move hover:bg-accent transition-colors",
-                                    taskLabware.includes(labware.id) && "border-primary"
+                                    "relative flex items-center justify-between p-3 rounded-lg border transition-all duration-200 cursor-move group",
+                                    taskLabware.includes(labware.id) && "border-primary",
+                                    "hover:shadow-md hover:border-primary/50"
                                   )}
                                 >
                                   <div className="flex items-center gap-3">
-                                    <GripIcon className="h-4 w-4 text-muted-foreground" />
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                                      <MoveIcon className="h-5 w-5 group-hover:animate-pulse" />
+                                    </div>
                                     <div>
                                       <div className="font-medium">{labware.name}</div>
                                       <div className="text-xs text-muted-foreground">{labware.description}</div>
@@ -240,6 +252,9 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                                       <PlusIcon className="h-4 w-4" />
                                     )}
                                   </Button>
+                                  <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="absolute inset-0 border-2 border-dashed border-primary/20 rounded-lg" />
+                                  </div>
                                 </div>
                               ))}
                             </div>
