@@ -105,7 +105,7 @@ export default function NewWorkflowPage() {
               <h1 className="text-3xl font-bold tracking-tight group-hover:text-primary transition-colors">
                 {name}
               </h1>
-              <PencilIcon className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <PencilIcon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
           )}
         </div>
