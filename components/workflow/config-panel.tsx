@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { BeakerIcon, Settings2Icon, TagIcon, DatabaseIcon } from 'lucide-react';
+import { BeakerIcon, TagIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 
 interface ConfigPanelProps {
@@ -82,10 +82,6 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
               <TabsTrigger value="labware" className="flex-1">
                 <TagIcon className="h-4 w-4 mr-2" />
                 Labware
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex-1">
-                <Settings2Icon className="h-4 w-4 mr-2" />
-                Settings
               </TabsTrigger>
             </TabsList>
 
@@ -178,26 +174,6 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                   </Card>
                 );
               })}
-            </TabsContent>
-
-            <TabsContent value="settings" className="space-y-4 mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">Node Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Node Label</Label>
-                    <Input
-                      value={data.label}
-                      onChange={(e) => onNodeUpdate(selectedNode.id, {
-                        ...data,
-                        label: e.target.value
-                      })}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
           </Tabs>
         </div>
