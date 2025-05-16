@@ -20,6 +20,7 @@ import 'reactflow/dist/style.css';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import TaskNode from './task-node';
+import ConfigPanel from './config-panel';
 import { 
   ChevronDownIcon,
   ChevronRightIcon,
@@ -87,7 +88,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Node | null>(null);
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedWorkcellId, setSelectedWorkcellId] = useState<string>('');
   const [selectedInstrumentId, setSelectedInstrumentId] = useState<string>('');
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -161,6 +162,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
           selectedTasks: [],
           selectedLabware: {},
           labwareConfig: {},
+          taskDurations: {},
           onTaskSelect: (taskName: string) => {
             setNodes(nodes => nodes.map(node => {
               if (node.id === nodeId) {
@@ -280,16 +282,35 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   );
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-    setSelectedTask(node);
+    setSelectedNode(node);
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
   }, []);
 
   const onDeleteNode = useCallback((nodeId: string) => {
     setNodes(nodes => nodes.filter(node => node.id !== nodeId));
     setEdges(edges => edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId));
-    if (selectedTask?.id === nodeId) {
-      setSelectedTask(null);
+    if (selectedNode?.id === nodeId) {
+      setSelectedNode(null);
     }
-  }, [setNodes, setEdges, selectedTask]);
+  }, [setNodes, setEdges, selectedNode]);
+
+  const handleNodeUpdate = useCallback((nodeId: string, updates: any) => {
+    setNodes(nodes => nodes.map(node => {
+      if (node.id === nodeId) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            ...updates
+          }
+        };
+      }
+      return node;
+    }));
+  }, [setNodes]);
 
   const handleZoomIn = useCallback(() => {
     setZoomLevel(z => Math.min(z + 0.2, 2));
@@ -312,20 +333,19 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
     };
 
     nodes.forEach(node => {
-      const { selectedTasks, selectedLabware, labwareConfig } = node.data;
+      const { selectedTasks, selectedLabware, labwareConfig, taskDurations } = node.data;
       selectedTasks.forEach((taskName: string) => {
         const taskId = `${node.id}-${taskName}`;
         workflow.tasks[taskId] = {
           id: taskId,
           instrument_type: node.data.instrument.group,
-          duration: 5, // Default duration
+          duration: taskDurations?.[taskName] || 5,
           dependencies: [],
           arguments: {},
           action: taskName,
           required_labware: {}
         };
 
-        // Add labware configuration
         if (selectedLabware[taskName]) {
           selectedLabware[taskName].forEach((labwareId: string) => {
             const config = labwareConfig?.[taskName]?.[labwareId];
@@ -359,67 +379,75 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
           {showLeftPanel && (
             <>
               <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-                <div className="h-full border-r">
+                <div className="h-full border-r flex flex-col">
                   <div className="p-4 border-b bg-card">
                     <h2 className="text-lg font-semibold">Workflow Builder</h2>
                     <p className="text-sm text-muted-foreground">Design your automation workflow</p>
                   </div>
-                  <ScrollArea className="h-[calc(100vh-16rem)]">
-                    <div className="p-4 space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Select Workcell</label>
-                        <Select 
-                          value={selectedWorkcellId} 
-                          onValueChange={setSelectedWorkcellId}
-                          disabled={isWorkcellSelectionDisabled}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a workcell" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {workcells.map((workcell) => (
-                              <SelectItem key={workcell.id} value={workcell.id}>
-                                {workcell.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
 
-                      {selectedWorkcell && (
-                        <div className="space-y-4">
-                          <Separator />
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Instrument Groups</label>
-                            <div className="space-y-2">
-                              {instrumentGroups.map(group => (
-                                <Card
-                                  key={group}
-                                  draggable
-                                  onDragStart={(e) => onDragStart(e, group)}
-                                  className="cursor-move hover:shadow-md transition-all"
-                                >
-                                  <CardHeader className="p-3">
-                                    <CardTitle className="text-sm flex items-center justify-between">
-                                      <span>{group}</span>
-                                      <Badge variant="secondary">
-                                        {instrumentsByGroup[group]?.length || 0} instruments
-                                      </Badge>
-                                    </CardTitle>
-                                  </CardHeader>
-                                  <CardContent className="p-3">
-                                    <div className="text-xs text-muted-foreground">
-                                      Drag to add to workflow
-                                    </div>
-                                  </CardContent>
-                                </Card>
+                  {selectedNode ? (
+                    <ConfigPanel
+                      selectedNode={selectedNode}
+                      onNodeUpdate={handleNodeUpdate}
+                    />
+                  ) : (
+                    <ScrollArea className="flex-1">
+                      <div className="p-4 space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Select Workcell</label>
+                          <Select 
+                            value={selectedWorkcellId} 
+                            onValueChange={setSelectedWorkcellId}
+                            disabled={isWorkcellSelectionDisabled}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a workcell" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {workcells.map((workcell) => (
+                                <SelectItem key={workcell.id} value={workcell.id}>
+                                  {workcell.name}
+                                </SelectItem>
                               ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {selectedWorkcell && (
+                          <div className="space-y-4">
+                            <Separator />
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Instrument Groups</label>
+                              <div className="space-y-2">
+                                {instrumentGroups.map(group => (
+                                  <Card
+                                    key={group}
+                                    draggable
+                                    onDragStart={(e) => onDragStart(e, group)}
+                                    className="cursor-move hover:shadow-md transition-all"
+                                  >
+                                    <CardHeader className="p-3">
+                                      <CardTitle className="text-sm flex items-center justify-between">
+                                        <span>{group}</span>
+                                        <Badge variant="secondary">
+                                          {instrumentsByGroup[group]?.length || 0} instruments
+                                        </Badge>
+                                      </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="p-3">
+                                      <div className="text-xs text-muted-foreground">
+                                        Drag to add to workflow
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  )}
                 </div>
               </ResizablePanel>
               <ResizableHandle withHandle>
@@ -441,6 +469,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
                 onNodeClick={onNodeClick}
+                onPaneClick={onPaneClick}
                 nodeTypes={nodeTypes}
                 defaultEdgeOptions={edgeOptions}
                 minZoom={0.2}
