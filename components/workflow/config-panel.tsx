@@ -1,5 +1,3 @@
-'use client';
-
 import { Node } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -85,6 +83,11 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
       ...prev,
       [taskName]: !prev[taskName]
     }));
+  };
+
+  const handleDragStart = (event: React.DragEvent, labware: any) => {
+    event.dataTransfer.setData('application/json', JSON.stringify(labware));
+    event.dataTransfer.effectAllowed = 'copy';
   };
 
   return (
@@ -194,31 +197,42 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                     <CollapsibleContent>
                       <CardContent className="pt-0">
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-2">
                             {labwareOptions.map(labware => (
-                              <Button
+                              <div
                                 key={labware.id}
-                                variant="outline"
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, { ...labware, taskName })}
                                 className={cn(
-                                  "h-auto p-4 justify-start",
+                                  "flex items-center justify-between p-3 rounded-lg border cursor-move hover:bg-accent transition-colors",
                                   taskLabware.includes(labware.id) && "border-primary"
                                 )}
-                                onClick={() => {
-                                  if (taskLabware.includes(labware.id)) {
-                                    handleRemoveLabware(taskName, labware.id);
-                                  } else {
-                                    handleAddLabware(taskName, labware.id);
-                                  }
-                                }}
                               >
-                                <div className="text-left">
-                                  <div className="font-medium">{labware.name}</div>
-                                  <div className="text-xs text-muted-foreground">{labware.description}</div>
+                                <div className="flex items-center gap-3">
+                                  <GripIcon className="h-4 w-4 text-muted-foreground" />
+                                  <div>
+                                    <div className="font-medium">{labware.name}</div>
+                                    <div className="text-xs text-muted-foreground">{labware.description}</div>
+                                  </div>
                                 </div>
-                                {taskLabware.includes(labware.id) && (
-                                  <Badge className="ml-auto">Added</Badge>
-                                )}
-                              </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    if (taskLabware.includes(labware.id)) {
+                                      handleRemoveLabware(taskName, labware.id);
+                                    } else {
+                                      handleAddLabware(taskName, labware.id);
+                                    }
+                                  }}
+                                >
+                                  {taskLabware.includes(labware.id) ? (
+                                    <XIcon className="h-4 w-4" />
+                                  ) : (
+                                    <PlusIcon className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
                             ))}
                           </div>
 
