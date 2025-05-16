@@ -100,19 +100,22 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
     event.stopPropagation();
 
     try {
-      const taskData = JSON.parse(event.dataTransfer.getData('application/json'));
-      if (taskData && taskData.name && !selectedTasks.includes(taskData.name)) {
-        onTaskSelect(taskData.name);
+      const labwareData = event.dataTransfer.getData('labware');
+      if (labwareData) {
+        const { id, taskName } = JSON.parse(labwareData);
+        if (!selectedLabware[taskName]?.includes(id)) {
+          onLabwareSelect(taskName, id);
+        }
       }
     } catch (error) {
-      console.error('Error parsing dropped task data:', error);
+      console.error('Error handling labware drop:', error);
     }
   };
 
   const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = 'copy';
   };
   
   return (
