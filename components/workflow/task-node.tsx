@@ -306,9 +306,11 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                                 <Input
                                                   type="number"
                                                   value={config.slot}
-                                                  onChange={(e) => handleConfigUpdate(taskName, labwareId, {
-                                                    slot: parseInt(e.target.value)
-                                                  })}
+                                                  onChange={(e) => handleConfigUpdate(
+                                                    taskName,
+                                                    labwareId,
+                                                    { slot: parseInt(e.target.value) }
+                                                  )}
                                                   min={1}
                                                 />
                                               </div>
@@ -317,9 +319,11 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                                 <Input
                                                   type="number"
                                                   value={config.temperature}
-                                                  onChange={(e) => handleConfigUpdate(taskName, labwareId, {
-                                                    temperature: parseInt(e.target.value)
-                                                  })}
+                                                  onChange={(e) => handleConfigUpdate(
+                                                    taskName,
+                                                    labwareId,
+                                                    { temperature: parseInt(e.target.value) }
+                                                  )}
                                                 />
                                               </div>
                                             </div>
@@ -327,9 +331,11 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                               <Label>Sealed</Label>
                                               <Switch
                                                 checked={config.isSealed}
-                                                onCheckedChange={(checked) => handleConfigUpdate(taskName, labwareId, {
-                                                  isSealed: checked
-                                                })}
+                                                onCheckedChange={(checked) => handleConfigUpdate(
+                                                  taskName,
+                                                  labwareId,
+                                                  { isSealed: checked }
+                                                )}
                                               />
                                             </div>
                                           </div>
@@ -340,7 +346,7 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                       variant="ghost"
                                       size="icon"
                                       className="h-6 w-6 hover:text-destructive"
-                                      onClick={() => handleRemoveLabware(taskName, labwareId)}
+                                      onClick={() => handleLabwareRemove(taskName, labwareId)}
                                     >
                                       <XIcon className="h-3 w-3" />
                                     </Button>

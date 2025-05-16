@@ -85,7 +85,12 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
     }));
   };
 
-  const handleDragStart = (event: React.DragEvent, labware: any) => {
+  const handleDragStart = (event: React.DragEvent, task: any) => {
+    event.dataTransfer.setData('application/json', JSON.stringify(task));
+    event.dataTransfer.effectAllowed = 'copy';
+  };
+
+  const handleLabwareDragStart = (event: React.DragEvent, labware: any) => {
     event.dataTransfer.setData('labware', JSON.stringify(labware));
     event.dataTransfer.effectAllowed = 'copy';
   };
@@ -120,8 +125,10 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                 {availableTasks.map(task => (
                   <Card
                     key={task.name}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, task)}
                     className={cn(
-                      "relative transition-colors",
+                      "relative transition-colors cursor-move",
                       selectedTasks.includes(task.name) && "bg-muted"
                     )}
                   >
@@ -203,7 +210,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                                 <div
                                   key={labware.id}
                                   draggable
-                                  onDragStart={(e) => handleDragStart(e, { id: labware.id, taskName })}
+                                  onDragStart={(e) => handleLabwareDragStart(e, { id: labware.id, taskName })}
                                   className={cn(
                                     "flex items-center justify-between p-3 rounded-lg border cursor-move hover:bg-accent transition-colors",
                                     taskLabware.includes(labware.id) && "border-primary"
