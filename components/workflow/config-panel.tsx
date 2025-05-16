@@ -7,11 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, ThermometerIcon, ShieldIcon, Settings2Icon, ChevronDownIcon, ChevronRightIcon, MoveIcon, ArrowLeftIcon } from 'lucide-react';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, ThermometerIcon, ShieldIcon, Settings2Icon, ChevronDownIcon, ChevronRightIcon, MoveIcon, ArrowLeftIcon, WrenchIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -92,22 +91,25 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
     <div className="h-full flex flex-col">
       <div className="p-4 border-b bg-card">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="px-2 py-1">
-              {instrument.group}
-            </Badge>
-            <h2 className="text-lg font-semibold">Node Configuration</h2>
+          <div className="flex items-center gap-3">
+            {onBackToInstruments && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={onBackToInstruments}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+              </Button>
+            )}
+            <div className="flex items-center gap-2">
+              <WrenchIcon className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold">Configure</h2>
+            </div>
           </div>
-          {onBackToInstruments && (
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={onBackToInstruments}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeftIcon className="h-4 w-4" />
-            </Button>
-          )}
+          <Badge variant="outline" className="px-2 py-1">
+            {instrument.group}
+          </Badge>
         </div>
       </div>
 
