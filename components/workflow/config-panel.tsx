@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { BeakerIcon, TagIcon } from 'lucide-react';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon, CheckIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 
 interface ConfigPanelProps {
@@ -32,6 +32,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
 
   const { data } = selectedNode;
   const { instrument, selectedTasks = [], selectedLabware = {}, labwareConfig = {} } = data;
+  const availableTasks = instrument.driver.tasks || [];
 
   const handleTaskDurationChange = (taskName: string, duration: number) => {
     onNodeUpdate(selectedNode.id, {
@@ -60,6 +61,18 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
     });
   };
 
+  const handleAddTask = (taskName: string) => {
+    if (data.onTaskSelect) {
+      data.onTaskSelect(taskName);
+    }
+  };
+
+  const handleRemoveTask = (taskName: string) => {
+    if (data.onTaskRemove) {
+      data.onTaskRemove(taskName);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b bg-card">
@@ -86,24 +99,89 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
             </TabsList>
 
             <TabsContent value="tasks" className="space-y-4 mt-4">
-              {selectedTasks.map(taskName => (
-                <Card key={taskName}>
-                  <CardHeader className="py-3">
-                    <CardTitle className="text-sm">{taskName}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">Available Tasks</h3>
+                  <div className="space-y-2">
+                    {availableTasks.map(task => (
+                      <Card key={task.name} className="relative">
+                        <CardHeader className="py-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm">{task.name}</CardTitle>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => selectedTasks.includes(task.name) 
+                                ? handleRemoveTask(task.name)
+                                : handleAddTask(task.name)
+                              }
+                              className={selectedTasks.includes(task.name) ? 'text-destructive' : ''}
+                            >
+                              {selectedTasks.includes(task.name) ? (
+                                <XIcon className="h-4 w-4" />
+                              ) : (
+                                <PlusIcon className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="py-2">
+                          <p className="text-sm text-muted-foreground">{task.description}</p>
+                          {task.parameters.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {task.parameters.map(param => (
+                                <Badge key={param} variant="secondary" className="text-xs">
+                                  {param}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </CardContent>
+                        {selectedTasks.includes(task.name) && (
+                          <>
+                            <Separator className="my-2" />
+                            <CardContent className="py-2">
+                              <div className="space-y-2">
+                                <Label>Duration (seconds)</Label>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={data.taskDurations?.[task.name] || 5}
+                                  onChange={(e) => handleTaskDurationChange(task.name, parseInt(e.target.value))}
+                                />
+                              </div>
+                            </CardContent>
+                          </>
+                        )}
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedTasks.length > 0 && (
+                  <>
+                    <Separator />
                     <div className="space-y-2">
-                      <Label>Duration (seconds)</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={data.taskDurations?.[taskName] || 5}
-                        onChange={(e) => handleTaskDurationChange(taskName, parseInt(e.target.value))}
-                      />
+                      <h3 className="text-sm font-medium">Selected Tasks</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedTasks.map(taskName => (
+                          <Badge key={taskName} variant="secondary" className="flex items-center gap-1">
+                            {taskName}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4 ml-1 hover:text-destructive"
+                              onClick={() => handleRemoveTask(taskName)}
+                            >
+                              <XIcon className="h-3 w-3" />
+                            </Button>
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  </>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="labware" className="space-y-4 mt-4">
