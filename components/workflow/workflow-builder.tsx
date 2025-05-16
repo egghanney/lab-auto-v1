@@ -37,6 +37,7 @@ import {
   XIcon,
   GripHorizontalIcon,
   MoveIcon,
+  BeakerIcon
 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
@@ -128,12 +129,10 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
     event.dataTransfer.setData('application/instrumentGroup', group);
     event.dataTransfer.effectAllowed = 'move';
     
-    // Add visual feedback only to the dragged element
     const element = event.currentTarget as HTMLElement;
     element.style.opacity = '0.5';
     element.style.transform = 'scale(1.02)';
     
-    // Remove feedback when drag ends
     const onDragEnd = () => {
       element.style.opacity = '';
       element.style.transform = '';
@@ -450,7 +449,8 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                                           <CardTitle className="text-sm flex items-center justify-between">
                                             <span>{group}</span>
                                             <Badge variant="secondary" className="group-hover:bg-primary/20">
-                                              {instrumentsByGroup[group]?.length || 0} instruments
+                                              <BeakerIcon className="h-3 w-3 mr-1" />
+                                              {instrumentsByGroup[group]?.length || 0}
                                             </Badge>
                                           </CardTitle>
                                           <p className="text-xs text-muted-foreground mt-1">
