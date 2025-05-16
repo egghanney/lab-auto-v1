@@ -1,5 +1,3 @@
-'use client';
-
 import { Node } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { BeakerIcon, TagIcon, PlusIcon, XIcon, CheckIcon } from 'lucide-react';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 
 interface ConfigPanelProps {
@@ -33,16 +31,6 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
   const { data } = selectedNode;
   const { instrument, selectedTasks = [], selectedLabware = {}, labwareConfig = {} } = data;
   const availableTasks = instrument.driver.tasks || [];
-
-  const handleTaskDurationChange = (taskName: string, duration: number) => {
-    onNodeUpdate(selectedNode.id, {
-      ...data,
-      taskDurations: {
-        ...data.taskDurations,
-        [taskName]: duration
-      }
-    });
-  };
 
   const handleLabwareConfigChange = (taskName: string, labwareId: string, updates: any) => {
     const currentConfig = labwareConfig[taskName]?.[labwareId] || {};
@@ -137,22 +125,6 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                             </div>
                           )}
                         </CardContent>
-                        {selectedTasks.includes(task.name) && (
-                          <>
-                            <Separator className="my-2" />
-                            <CardContent className="py-2">
-                              <div className="space-y-2">
-                                <Label>Duration (seconds)</Label>
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  value={data.taskDurations?.[task.name] || 5}
-                                  onChange={(e) => handleTaskDurationChange(task.name, parseInt(e.target.value))}
-                                />
-                              </div>
-                            </CardContent>
-                          </>
-                        )}
                       </Card>
                     ))}
                   </div>
