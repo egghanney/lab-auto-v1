@@ -1,5 +1,3 @@
-'use client';
-
 import { useState } from 'react';
 import { Node } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +22,7 @@ interface ConfigPanelProps {
 
 export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstruments }: ConfigPanelProps) {
   const [openTasks, setOpenTasks] = useState<Record<string, boolean>>({});
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
   if (!selectedNode) {
     return (
@@ -87,6 +86,38 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
     }));
   };
 
+  const handleDragStart = (event: React.DragEvent, task: any) => {
+    event.dataTransfer.setData('application/json', JSON.stringify(task));
+    event.dataTransfer.effectAllowed = 'move';
+    setDraggedItem(task.name);
+
+    // Create a custom drag image
+    const dragPreview = document.createElement('div');
+    dragPreview.className = 'bg-background border-2 border-primary rounded-lg p-2 shadow-lg';
+    dragPreview.textContent = task.name;
+    document.body.appendChild(dragPreview);
+    event.dataTransfer.setDragImage(dragPreview, 0, 0);
+    setTimeout(() => document.body.removeChild(dragPreview), 0);
+  };
+
+  const handleLabwareDragStart = (event: React.DragEvent, data: { id: string; taskName: string }) => {
+    event.dataTransfer.setData('labware', JSON.stringify(data));
+    event.dataTransfer.effectAllowed = 'move';
+    setDraggedItem(data.id);
+
+    // Create a custom drag image
+    const dragPreview = document.createElement('div');
+    dragPreview.className = 'bg-background border-2 border-primary rounded-lg p-2 shadow-lg';
+    dragPreview.textContent = labwareOptions.find(l => l.id === data.id)?.name || data.id;
+    document.body.appendChild(dragPreview);
+    event.dataTransfer.setDragImage(dragPreview, 0, 0);
+    setTimeout(() => document.body.removeChild(dragPreview), 0);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b bg-card">
@@ -133,9 +164,12 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                   <Card
                     key={task.name}
                     draggable
+                    onDragStart={(e) => handleDragStart(e, task)}
+                    onDragEnd={handleDragEnd}
                     className={cn(
                       "relative transition-all duration-200 cursor-move group",
-                      selectedTasks.includes(task.name) && "bg-muted"
+                      selectedTasks.includes(task.name) && "bg-muted",
+                      draggedItem === task.name && "opacity-50"
                     )}
                   >
                     <CardHeader className="py-3">
@@ -224,9 +258,13 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                               {labwareOptions.map(labware => (
                                 <div
                                   key={labware.id}
+                                  draggable
+                                  onDragStart={(e) => handleLabwareDragStart(e, { id: labware.id, taskName })}
+                                  onDragEnd={handleDragEnd}
                                   className={cn(
                                     "relative flex items-center justify-between p-3 rounded-lg border transition-all duration-200 cursor-move group",
                                     taskLabware.includes(labware.id) && "border-primary",
+                                    draggedItem === labware.id && "opacity-50",
                                     "hover:shadow-md hover:border-primary/50"
                                   )}
                                 >
@@ -262,109 +300,6 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                 </div>
                               ))}
                             </div>
-
-                            {taskLabware.length > 0 && (
-                              <>
-                                <Separator />
-                                <div className="space-y-2">
-                                  <h4 className="text-sm font-medium">Configured Labware</h4>
-                                  <div className="space-y-2 pb-4">
-                                    {taskLabware.map(labwareId => {
-                                      const labware = labwareOptions.find(l => l.id === labwareId);
-                                      const config = labwareConfig[taskName]?.[labwareId] || {
-                                        slot: 1,
-                                        temperature: 25,
-                                        isSealed: false
-                                      };
-
-                                      return (
-                                        <div key={labwareId} className="flex items-center justify-between p-2 bg-muted rounded-lg">
-                                          <div className="flex items-center gap-2">
-                                            <div>
-                                              <p className="text-sm font-medium">{labware?.name}</p>
-                                              <div className="flex gap-1 mt-1">
-                                                <Badge variant="outline" className="text-xs">
-                                                  <ThermometerIcon className="h-3 w-3 mr-1" />
-                                                  {config.temperature}°C
-                                                </Badge>
-                                                {config.isSealed && (
-                                                  <Badge variant="outline" className="text-xs">
-                                                    <ShieldIcon className="h-3 w-3 mr-1" />
-                                                    Sealed
-                                                  </Badge>
-                                                )}
-                                              </div>
-                                            </div>
-                                          </div>
-                                          <div className="flex items-center gap-2">
-                                            <Dialog>
-                                              <DialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                  <Settings2Icon className="h-4 w-4" />
-                                                </Button>
-                                              </DialogTrigger>
-                                              <DialogContent>
-                                                <DialogHeader>
-                                                  <DialogTitle>Configure {labware?.name}</DialogTitle>
-                                                </DialogHeader>
-                                                <div className="space-y-4 py-4">
-                                                  <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                      <Label>Slot</Label>
-                                                      <Input
-                                                        type="number"
-                                                        min={1}
-                                                        value={config.slot}
-                                                        onChange={(e) => handleLabwareConfigChange(
-                                                          taskName,
-                                                          labwareId,
-                                                          { slot: parseInt(e.target.value) }
-                                                        )}
-                                                      />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                      <Label>Temperature (°C)</Label>
-                                                      <Input
-                                                        type="number"
-                                                        value={config.temperature}
-                                                        onChange={(e) => handleLabwareConfigChange(
-                                                          taskName,
-                                                          labwareId,
-                                                          { temperature: parseInt(e.target.value) }
-                                                        )}
-                                                      />
-                                                    </div>
-                                                  </div>
-                                                  <div className="flex items-center justify-between">
-                                                    <Label>Sealed</Label>
-                                                    <Switch
-                                                      checked={config.isSealed}
-                                                      onCheckedChange={(checked) => handleLabwareConfigChange(
-                                                        taskName,
-                                                        labwareId,
-                                                        { isSealed: checked }
-                                                      )}
-                                                    />
-                                                  </div>
-                                                </div>
-                                              </DialogContent>
-                                            </Dialog>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={() => handleRemoveLabware(taskName, labwareId)}
-                                              className="h-8 w-8 text-destructive"
-                                            >
-                                              <XIcon className="h-4 w-4" />
-                                            </Button>
-                                          </div>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              </>
-                            )}
                           </div>
                         </CardContent>
                       </CollapsibleContent>
