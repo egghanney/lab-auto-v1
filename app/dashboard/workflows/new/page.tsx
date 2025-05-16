@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { ChevronLeftIcon, SaveIcon } from 'lucide-react';
+import { ChevronLeftIcon, SaveIcon, PencilIcon } from 'lucide-react';
 import Link from 'next/link';
 import { WorkflowConfig, WorkflowInput } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -98,12 +98,15 @@ export default function NewWorkflowPage() {
               autoFocus
             />
           ) : (
-            <h1 
-              className="text-3xl font-bold tracking-tight cursor-pointer hover:bg-accent hover:bg-opacity-50 rounded px-2 py-1"
+            <div 
+              className="flex items-center gap-2 group cursor-pointer"
               onClick={() => setIsEditing(true)}
             >
-              {name}
-            </h1>
+              <h1 className="text-3xl font-bold tracking-tight group-hover:text-primary transition-colors">
+                {name}
+              </h1>
+              <PencilIcon className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
           )}
         </div>
         <Button disabled={isSaving} onClick={handleSave}>
