@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch';
 import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, ThermometerIcon, ShieldIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface ConfigPanelProps {
   selectedNode: Node | null;
@@ -64,11 +65,6 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, task: any) => {
-    e.dataTransfer.setData('application/json', JSON.stringify(task));
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
   const handleAddLabware = (taskName: string, labwareId: string) => {
     if (data.onLabwareSelect) {
       data.onLabwareSelect(taskName, labwareId);
@@ -94,57 +90,40 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
-          <Tabs defaultValue="tasks">
-            <TabsList className="w-full">
-              <TabsTrigger value="tasks" className="flex-1">
-                <BeakerIcon className="h-4 w-4 mr-2" />
-                Tasks
-              </TabsTrigger>
-              <TabsTrigger value="labware" className="flex-1">
-                <TagIcon className="h-4 w-4 mr-2" />
-                Labware
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="tasks" className="space-y-4 mt-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Available Tasks</h3>
-                  <div className="space-y-2">
-                    {availableTasks.map(task => (
-                      <Card 
-                        key={task.name} 
-                        className={cn(
-                          "relative cursor-move transition-colors",
-                          "hover:border-primary/50",
-                          selectedTasks.includes(task.name) && "bg-muted"
-                        )}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, task)}
-                      >
-                        <CardHeader className="py-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <GripIcon className="h-4 w-4 text-muted-foreground" />
-                              <CardTitle className="text-sm">{task.name}</CardTitle>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => selectedTasks.includes(task.name) 
-                                ? handleRemoveTask(task.name)
-                                : handleAddTask(task.name)
-                              }
-                              className={selectedTasks.includes(task.name) ? 'text-destructive' : ''}
-                            >
-                              {selectedTasks.includes(task.name) ? (
-                                <XIcon className="h-4 w-4" />
-                              ) : (
-                                <PlusIcon className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </CardHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Tasks and Labware</h3>
+              <div className="space-y-2">
+                {availableTasks.map(task => (
+                  <Collapsible key={task.name}>
+                    <Card className={cn(
+                      "relative transition-colors",
+                      selectedTasks.includes(task.name) && "bg-muted"
+                    )}>
+                      <CardHeader className="py-3">
+                        <div className="flex items-center justify-between">
+                          <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-80">
+                            <GripIcon className="h-4 w-4 text-muted-foreground" />
+                            <CardTitle className="text-sm">{task.name}</CardTitle>
+                          </CollapsibleTrigger>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => selectedTasks.includes(task.name) 
+                              ? handleRemoveTask(task.name)
+                              : handleAddTask(task.name)
+                            }
+                            className={selectedTasks.includes(task.name) ? 'text-destructive' : ''}
+                          >
+                            {selectedTasks.includes(task.name) ? (
+                              <XIcon className="h-4 w-4" />
+                            ) : (
+                              <PlusIcon className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CollapsibleContent>
                         <CardContent className="py-2">
                           <p className="text-sm text-muted-foreground">{task.description}</p>
                           {task.parameters.length > 0 && (
@@ -156,152 +135,130 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                               ))}
                             </div>
                           )}
+                          
+                          {selectedTasks.includes(task.name) && (
+                            <div className="mt-4 space-y-4">
+                              <Separator />
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <Label className="text-sm">Associated Labware</Label>
+                                  <Select
+                                    onValueChange={(labwareId) => handleAddLabware(task.name, labwareId)}
+                                  >
+                                    <SelectTrigger className="w-[180px]">
+                                      <SelectValue placeholder="Add labware" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {labwareOptions.map(labware => (
+                                        <SelectItem 
+                                          key={labware.id} 
+                                          value={labware.id}
+                                          disabled={selectedLabware[task.name]?.includes(labware.id)}
+                                        >
+                                          {labware.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                  {(selectedLabware[task.name] || []).map(labwareId => {
+                                    const labware = labwareOptions.find(l => l.id === labwareId);
+                                    const config = labwareConfig[task.name]?.[labwareId] || {
+                                      slot: 1,
+                                      temperature: 25,
+                                      isSealed: false
+                                    };
+
+                                    return (
+                                      <Card key={labwareId} className="p-3 bg-background/50">
+                                        <div className="flex items-center justify-between mb-3">
+                                          <div>
+                                            <h4 className="font-medium text-sm">{labware?.name}</h4>
+                                            <p className="text-xs text-muted-foreground">{labware?.description}</p>
+                                          </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleRemoveLabware(task.name, labwareId)}
+                                            className="text-destructive h-8 w-8 p-0"
+                                          >
+                                            <XIcon className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                          <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-1">
+                                              <Label className="text-xs">Slot</Label>
+                                              <Input
+                                                type="number"
+                                                min={1}
+                                                value={config.slot}
+                                                onChange={(e) => handleLabwareConfigChange(
+                                                  task.name,
+                                                  labwareId,
+                                                  { slot: parseInt(e.target.value) }
+                                                )}
+                                                className="h-8 text-sm"
+                                              />
+                                            </div>
+                                            <div className="space-y-1">
+                                              <Label className="text-xs">Temperature (°C)</Label>
+                                              <Input
+                                                type="number"
+                                                value={config.temperature}
+                                                onChange={(e) => handleLabwareConfigChange(
+                                                  task.name,
+                                                  labwareId,
+                                                  { temperature: parseInt(e.target.value) }
+                                                )}
+                                                className="h-8 text-sm"
+                                              />
+                                            </div>
+                                          </div>
+
+                                          <div className="flex items-center justify-between">
+                                            <Label className="text-xs">Sealed</Label>
+                                            <Switch
+                                              checked={config.isSealed}
+                                              onCheckedChange={(checked) => handleLabwareConfigChange(
+                                                task.name,
+                                                labwareId,
+                                                { isSealed: checked }
+                                              )}
+                                            />
+                                          </div>
+
+                                          <div className="flex flex-wrap gap-1 pt-2">
+                                            <Badge variant="outline" className="text-xs">
+                                              <ThermometerIcon className="h-3 w-3 mr-1" />
+                                              {config.temperature}°C
+                                            </Badge>
+                                            {config.isSealed && (
+                                              <Badge variant="outline" className="text-xs">
+                                                <ShieldIcon className="h-3 w-3 mr-1" />
+                                                Sealed
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </Card>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-
-                {selectedTasks.length > 0 && (
-                  <>
-                    <Separator />
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium">Selected Tasks</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedTasks.map(taskName => (
-                          <Badge key={taskName} variant="secondary" className="flex items-center gap-1">
-                            {taskName}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 ml-1 hover:text-destructive"
-                              onClick={() => handleRemoveTask(taskName)}
-                            >
-                              <XIcon className="h-3 w-3" />
-                            </Button>
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
+                      </CollapsibleContent>
+                    </Card>
+                  </Collapsible>
+                ))}
               </div>
-            </TabsContent>
-
-            <TabsContent value="labware" className="space-y-4 mt-4">
-              {selectedTasks.map(taskName => (
-                <Card key={taskName}>
-                  <CardHeader className="py-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm">{taskName}</CardTitle>
-                      <Select
-                        onValueChange={(labwareId) => handleAddLabware(taskName, labwareId)}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Add labware" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {labwareOptions.map(labware => (
-                            <SelectItem 
-                              key={labware.id} 
-                              value={labware.id}
-                              disabled={selectedLabware[taskName]?.includes(labware.id)}
-                            >
-                              {labware.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {(selectedLabware[taskName] || []).map(labwareId => {
-                      const labware = labwareOptions.find(l => l.id === labwareId);
-                      const config = labwareConfig[taskName]?.[labwareId] || {
-                        slot: 1,
-                        temperature: 25,
-                        isSealed: false
-                      };
-
-                      return (
-                        <div key={labwareId} className="space-y-4 p-4 border rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium">{labware?.name}</h4>
-                              <p className="text-sm text-muted-foreground">{labware?.description}</p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveLabware(taskName, labwareId)}
-                              className="text-destructive"
-                            >
-                              <XIcon className="h-4 w-4" />
-                            </Button>
-                          </div>
-
-                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label>Slot</Label>
-                                <Input
-                                  type="number"
-                                  min={1}
-                                  value={config.slot}
-                                  onChange={(e) => handleLabwareConfigChange(
-                                    taskName,
-                                    labwareId,
-                                    { slot: parseInt(e.target.value) }
-                                  )}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Temperature (°C)</Label>
-                                <Input
-                                  type="number"
-                                  value={config.temperature}
-                                  onChange={(e) => handleLabwareConfigChange(
-                                    taskName,
-                                    labwareId,
-                                    { temperature: parseInt(e.target.value) }
-                                  )}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <Label>Sealed</Label>
-                              <Switch
-                                checked={config.isSealed}
-                                onCheckedChange={(checked) => handleLabwareConfigChange(
-                                  taskName,
-                                  labwareId,
-                                  { isSealed: checked }
-                                )}
-                              />
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                              <Badge variant="outline" className="text-xs">
-                                <ThermometerIcon className="h-3 w-3 mr-1" />
-                                {config.temperature}°C
-                              </Badge>
-                              {config.isSealed && (
-                                <Badge variant="outline" className="text-xs">
-                                  <ShieldIcon className="h-3 w-3 mr-1" />
-                                  Sealed
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
-              ))}
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </div>
       </ScrollArea>
     </div>
