@@ -100,6 +100,17 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
     event.stopPropagation();
 
     try {
+      // Check for task data first
+      const taskData = event.dataTransfer.getData('application/json');
+      if (taskData) {
+        const task = JSON.parse(taskData);
+        if (task && task.name && !selectedTasks.includes(task.name)) {
+          onTaskSelect(task.name);
+          return;
+        }
+      }
+
+      // Check for labware data
       const labwareData = event.dataTransfer.getData('labware');
       if (labwareData) {
         const { id, taskName } = JSON.parse(labwareData);
@@ -108,7 +119,7 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
         }
       }
     } catch (error) {
-      console.error('Error handling labware drop:', error);
+      console.error('Error handling drop:', error);
     }
   };
 
@@ -329,7 +340,7 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                       variant="ghost"
                                       size="icon"
                                       className="h-6 w-6 hover:text-destructive"
-                                      onClick={() => handleLabwareRemove(taskName, labwareId)}
+                                      onClick={() => handleRemoveLabware(taskName, labwareId)}
                                     >
                                       <XIcon className="h-3 w-3" />
                                     </Button>
