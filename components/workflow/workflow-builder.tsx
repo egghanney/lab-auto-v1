@@ -35,8 +35,6 @@ import {
   SearchIcon,
   Settings2Icon,
   XIcon,
-  PencilIcon,
-  ChevronLeftIcon
 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
@@ -62,7 +60,6 @@ import {
 } from "@/components/ui/collapsible";
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 interface WorkflowBuilderProps {
   initialWorkflow?: WorkflowConfig;
@@ -97,8 +94,6 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isTaskListOpen, setIsTaskListOpen] = useState(true);
   const [openTaskLabware, setOpenTaskLabware] = useState<string | null>(null);
-  const [name, setName] = useState('Untitled Workflow');
-  const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -386,40 +381,8 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
               <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
                 <div className="h-full border-r flex flex-col">
                   <div className="p-4 border-b bg-card">
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" asChild>
-                        <Link href="/dashboard/workflows">
-                          <ChevronLeftIcon className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      {isEditing ? (
-                        <Input
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          onBlur={() => setIsEditing(false)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              setIsEditing(false);
-                            }
-                          }}
-                          className="text-2xl font-bold h-auto py-1 px-2 w-auto min-w-[300px]"
-                          autoFocus
-                        />
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <h1 className="text-2xl font-bold tracking-tight">{name}</h1>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 hover:bg-accent"
-                            onClick={() => setIsEditing(true)}
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">Design your automation workflow</p>
+                    <h2 className="text-lg font-semibold">Workflow Builder</h2>
+                    <p className="text-sm text-muted-foreground">Design your automation workflow</p>
                   </div>
 
                   {selectedNode ? (
