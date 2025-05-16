@@ -502,10 +502,18 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
               >
                 <Background 
                   variant="dots"
-                  gap={12}
-                  size={1}
+                  gap={24}
+                  size={2}
                   color="hsl(var(--muted-foreground))"
                   className="opacity-5"
+                />
+                <Background 
+                  variant="lines"
+                  gap={96}
+                  size={1}
+                  color="hsl(var(--muted-foreground))"
+                  className="opacity-[0.075]"
+                  offset={1}
                 />
                 <Controls 
                   className="bg-background/80 backdrop-blur-sm border rounded-lg p-2"
