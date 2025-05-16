@@ -99,26 +99,24 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
 
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b bg-card">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="px-2 py-1">
-              {instrument.group}
-            </Badge>
-            <h2 className="text-lg font-semibold">Node Configuration</h2>
-          </div>
-          {onBackToInstruments && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onBackToInstruments}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeftIcon className="h-4 w-4 mr-2" />
-              Instruments
-            </Button>
-          )}
+      <div className="p-3 border-b bg-card flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="px-2 py-1">
+            {instrument.group}
+          </Badge>
+          <h2 className="text-sm font-medium">Node Config</h2>
         </div>
+        {onBackToInstruments && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onBackToInstruments}
+            className="text-muted-foreground hover:text-foreground gap-1.5"
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+            Back
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="tasks" className="flex-1 flex flex-col">
