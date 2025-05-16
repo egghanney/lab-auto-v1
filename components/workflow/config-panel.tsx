@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Node } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,6 @@ import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useState } from 'react';
 
 interface ConfigPanelProps {
   selectedNode: Node | null;
@@ -23,6 +23,7 @@ interface ConfigPanelProps {
 
 export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstruments }: ConfigPanelProps) {
   const [openTasks, setOpenTasks] = useState<Record<string, boolean>>({});
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
   if (!selectedNode) {
     return (
@@ -86,6 +87,16 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
     }));
   };
 
+  const onDragStart = (event: React.DragEvent, data: any, type: 'task' | 'labware') => {
+    event.dataTransfer.setData(type === 'task' ? 'application/json' : 'labware', JSON.stringify(data));
+    event.dataTransfer.effectAllowed = 'copy';
+    setDraggedItem(type === 'task' ? data.name : data.id);
+  };
+
+  const onDragEnd = () => {
+    setDraggedItem(null);
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b bg-card">
@@ -130,10 +141,12 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                   <Card
                     key={task.name}
                     draggable
-                    onDragStart={(e) => handleDragStart(e, task)}
+                    onDragStart={(e) => onDragStart(e, task, 'task')}
+                    onDragEnd={onDragEnd}
                     className={cn(
                       "relative transition-all duration-200 cursor-move group",
-                      selectedTasks.includes(task.name) && "bg-muted"
+                      selectedTasks.includes(task.name) && "bg-muted",
+                      draggedItem === task.name && "opacity-50"
                     )}
                   >
                     <CardHeader className="py-3">
@@ -223,11 +236,13 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                 <div
                                   key={labware.id}
                                   draggable
-                                  onDragStart={(e) => handleLabwareDragStart(e, { id: labware.id, taskName })}
+                                  onDragStart={(e) => onDragStart(e, { id: labware.id, taskName }, 'labware')}
+                                  onDragEnd={onDragEnd}
                                   className={cn(
                                     "relative flex items-center justify-between p-3 rounded-lg border transition-all duration-200 cursor-move group",
                                     taskLabware.includes(labware.id) && "border-primary",
-                                    "hover:shadow-md hover:border-primary/50"
+                                    "hover:shadow-md hover:border-primary/50",
+                                    draggedItem === labware.id && "opacity-50"
                                   )}
                                 >
                                   <div className="flex items-center gap-3">
