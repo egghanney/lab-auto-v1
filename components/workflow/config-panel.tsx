@@ -1,3 +1,5 @@
+'use client';
+
 import { Node } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -86,7 +88,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
   };
 
   const handleDragStart = (event: React.DragEvent, labware: any) => {
-    event.dataTransfer.setData('application/json', JSON.stringify(labware));
+    event.dataTransfer.setData('labware', JSON.stringify(labware));
     event.dataTransfer.effectAllowed = 'copy';
   };
 
@@ -188,7 +190,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                             )}
                             <CardTitle className="text-sm">{taskName}</CardTitle>
                             <Badge variant="secondary">
-                              {taskLabware.length} labware
+                              {taskLabware.length}
                             </Badge>
                           </div>
                         </div>
