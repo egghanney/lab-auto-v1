@@ -94,14 +94,38 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
       ...updates
     });
   };
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    try {
+      const taskData = JSON.parse(event.dataTransfer.getData('application/json'));
+      if (taskData && taskData.name && !selectedTasks.includes(taskData.name)) {
+        onTaskSelect(taskData.name);
+      }
+    } catch (error) {
+      console.error('Error parsing dropped task data:', error);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'move';
+  };
   
   return (
-    <div className={cn(
-      'px-4 py-3 rounded-xl border-2 shadow-lg backdrop-blur-sm min-w-[280px] transition-all duration-200 group relative',
-      'bg-gradient-to-br from-primary-50 to-primary-100/50 border-primary-200 hover:border-primary-300',
-      'dark:from-primary-950 dark:to-primary-900/50 dark:border-primary-800 dark:hover:border-primary-700',
-      selected && 'ring-2 ring-primary ring-offset-2 dark:ring-offset-background'
-    )}>
+    <div 
+      className={cn(
+        'px-4 py-3 rounded-xl border-2 shadow-lg backdrop-blur-sm min-w-[280px] transition-all duration-200 group relative',
+        'bg-gradient-to-br from-primary-50 to-primary-100/50 border-primary-200 hover:border-primary-300',
+        'dark:from-primary-950 dark:to-primary-900/50 dark:border-primary-800 dark:hover:border-primary-700',
+        selected && 'ring-2 ring-primary ring-offset-2 dark:ring-offset-background'
+      )}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
       <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 w-6 h-6 flex items-center justify-center">
         <Handle
           type="target"

@@ -1,3 +1,5 @@
+'use client';
+
 import { Node } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,8 +11,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { BeakerIcon, TagIcon, PlusIcon, XIcon } from 'lucide-react';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
+import { cn } from '@/lib/utils';
 
 interface ConfigPanelProps {
   selectedNode: Node | null;
@@ -61,6 +64,11 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
     }
   };
 
+  const handleDragStart = (e: React.DragEvent, task: any) => {
+    e.dataTransfer.setData('application/json', JSON.stringify(task));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b bg-card">
@@ -92,10 +100,22 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
                   <h3 className="text-sm font-medium">Available Tasks</h3>
                   <div className="space-y-2">
                     {availableTasks.map(task => (
-                      <Card key={task.name} className="relative">
+                      <Card 
+                        key={task.name} 
+                        className={cn(
+                          "relative cursor-move transition-colors",
+                          "hover:border-primary/50",
+                          selectedTasks.includes(task.name) && "bg-muted"
+                        )}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, task)}
+                      >
                         <CardHeader className="py-3">
                           <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm">{task.name}</CardTitle>
+                            <div className="flex items-center gap-2">
+                              <GripIcon className="h-4 w-4 text-muted-foreground" />
+                              <CardTitle className="text-sm">{task.name}</CardTitle>
+                            </div>
                             <Button
                               variant="ghost"
                               size="sm"
