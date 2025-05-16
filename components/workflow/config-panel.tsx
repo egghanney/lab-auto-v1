@@ -1,6 +1,3 @@
-'use client';
-
-import { useState } from 'react';
 import { Node } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +13,7 @@ import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useState } from 'react';
 
 interface ConfigPanelProps {
   selectedNode: Node | null;
@@ -101,11 +99,12 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
           {onBackToInstruments && (
             <Button 
               variant="ghost" 
-              size="icon"
+              size="sm" 
               onClick={onBackToInstruments}
               className="text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeftIcon className="h-4 w-4" />
+              <ArrowLeftIcon className="h-4 w-4 mr-2" />
+              Instruments
             </Button>
           )}
         </div>
@@ -131,6 +130,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                   <Card
                     key={task.name}
                     draggable
+                    onDragStart={(e) => handleDragStart(e, task)}
                     className={cn(
                       "relative transition-all duration-200 cursor-move group",
                       selectedTasks.includes(task.name) && "bg-muted"
@@ -222,6 +222,8 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                               {labwareOptions.map(labware => (
                                 <div
                                   key={labware.id}
+                                  draggable
+                                  onDragStart={(e) => handleLabwareDragStart(e, { id: labware.id, taskName })}
                                   className={cn(
                                     "relative flex items-center justify-between p-3 rounded-lg border transition-all duration-200 cursor-move group",
                                     taskLabware.includes(labware.id) && "border-primary",
