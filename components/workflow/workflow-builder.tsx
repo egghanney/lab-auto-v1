@@ -128,13 +128,15 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
     event.dataTransfer.setData('application/instrumentGroup', group);
     event.dataTransfer.effectAllowed = 'move';
     
-    // Add visual feedback
+    // Add visual feedback only to the dragged element
     const element = event.currentTarget as HTMLElement;
-    element.classList.add('opacity-50');
+    element.style.opacity = '0.5';
+    element.style.transform = 'scale(1.02)';
     
     // Remove feedback when drag ends
     const onDragEnd = () => {
-      element.classList.remove('opacity-50');
+      element.style.opacity = '';
+      element.style.transform = '';
       element.removeEventListener('dragend', onDragEnd);
     };
     element.addEventListener('dragend', onDragEnd);
