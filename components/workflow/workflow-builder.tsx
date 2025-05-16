@@ -35,6 +35,8 @@ import {
   SearchIcon,
   Settings2Icon,
   XIcon,
+  GripHorizontalIcon,
+  MoveIcon,
 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
@@ -125,6 +127,17 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const onDragStart = (event: React.DragEvent, group: string) => {
     event.dataTransfer.setData('application/instrumentGroup', group);
     event.dataTransfer.effectAllowed = 'move';
+    
+    // Add visual feedback
+    const element = event.currentTarget as HTMLElement;
+    element.classList.add('opacity-50');
+    
+    // Remove feedback when drag ends
+    const onDragEnd = () => {
+      element.classList.remove('opacity-50');
+      element.removeEventListener('dragend', onDragEnd);
+    };
+    element.addEventListener('dragend', onDragEnd);
   };
 
   const onDrop = useCallback(
@@ -424,21 +437,29 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                                     key={group}
                                     draggable
                                     onDragStart={(e) => onDragStart(e, group)}
-                                    className="cursor-move hover:shadow-md transition-all"
+                                    className="cursor-move hover:shadow-md transition-all group border-2 hover:border-primary"
                                   >
-                                    <CardHeader className="p-3">
-                                      <CardTitle className="text-sm flex items-center justify-between">
-                                        <span>{group}</span>
-                                        <Badge variant="secondary">
-                                          {instrumentsByGroup[group]?.length || 0} instruments
-                                        </Badge>
-                                      </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="p-3">
-                                      <div className="text-xs text-muted-foreground">
-                                        Drag to add to workflow
+                                    <CardHeader className="p-3 space-y-0">
+                                      <div className="flex items-center gap-3">
+                                        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary">
+                                          <MoveIcon className="h-5 w-5 group-hover:animate-pulse" />
+                                        </div>
+                                        <div className="flex-1">
+                                          <CardTitle className="text-sm flex items-center justify-between">
+                                            <span>{group}</span>
+                                            <Badge variant="secondary" className="group-hover:bg-primary/20">
+                                              {instrumentsByGroup[group]?.length || 0} instruments
+                                            </Badge>
+                                          </CardTitle>
+                                          <p className="text-xs text-muted-foreground mt-1">
+                                            Drag to add to workflow
+                                          </p>
+                                        </div>
                                       </div>
-                                    </CardContent>
+                                    </CardHeader>
+                                    <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/20 rounded-lg" />
+                                    </div>
                                   </Card>
                                 ))}
                               </div>
