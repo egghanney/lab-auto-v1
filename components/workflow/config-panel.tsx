@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon } from 'lucide-react';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, ThermometerIcon, ShieldIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
 
@@ -67,6 +67,18 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
   const handleDragStart = (e: React.DragEvent, task: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(task));
     e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleAddLabware = (taskName: string, labwareId: string) => {
+    if (data.onLabwareSelect) {
+      data.onLabwareSelect(taskName, labwareId);
+    }
+  };
+
+  const handleRemoveLabware = (taskName: string, labwareId: string) => {
+    if (data.onLabwareRemove) {
+      data.onLabwareRemove(taskName, labwareId);
+    }
   };
 
   return (
@@ -177,73 +189,117 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
             </TabsContent>
 
             <TabsContent value="labware" className="space-y-4 mt-4">
-              {selectedTasks.map(taskName => {
-                const taskLabware = selectedLabware[taskName] || [];
-                return (
-                  <Card key={taskName}>
-                    <CardHeader className="py-3">
+              {selectedTasks.map(taskName => (
+                <Card key={taskName}>
+                  <CardHeader className="py-3">
+                    <div className="flex items-center justify-between">
                       <CardTitle className="text-sm">{taskName}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {taskLabware.map(labwareId => {
-                        const labware = labwareOptions.find(l => l.id === labwareId);
-                        const config = labwareConfig[taskName]?.[labwareId] || {};
-                        
-                        return (
-                          <div key={labwareId} className="space-y-4 p-4 border rounded-lg">
-                            <div className="flex items-center justify-between">
+                      <Select
+                        onValueChange={(labwareId) => handleAddLabware(taskName, labwareId)}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Add labware" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {labwareOptions.map(labware => (
+                            <SelectItem 
+                              key={labware.id} 
+                              value={labware.id}
+                              disabled={selectedLabware[taskName]?.includes(labware.id)}
+                            >
+                              {labware.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(selectedLabware[taskName] || []).map(labwareId => {
+                      const labware = labwareOptions.find(l => l.id === labwareId);
+                      const config = labwareConfig[taskName]?.[labwareId] || {
+                        slot: 1,
+                        temperature: 25,
+                        isSealed: false
+                      };
+
+                      return (
+                        <div key={labwareId} className="space-y-4 p-4 border rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
                               <h4 className="font-medium">{labware?.name}</h4>
-                              <Badge variant="outline">{labware?.type}</Badge>
+                              <p className="text-sm text-muted-foreground">{labware?.description}</p>
                             </div>
-                            
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label>Slot</Label>
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    value={config.slot || 1}
-                                    onChange={(e) => handleLabwareConfigChange(
-                                      taskName,
-                                      labwareId,
-                                      { slot: parseInt(e.target.value) }
-                                    )}
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Temperature (°C)</Label>
-                                  <Input
-                                    type="number"
-                                    value={config.temperature || 25}
-                                    onChange={(e) => handleLabwareConfigChange(
-                                      taskName,
-                                      labwareId,
-                                      { temperature: parseInt(e.target.value) }
-                                    )}
-                                  />
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center justify-between">
-                                <Label>Sealed</Label>
-                                <Switch
-                                  checked={config.isSealed || false}
-                                  onCheckedChange={(checked) => handleLabwareConfigChange(
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveLabware(taskName, labwareId)}
+                              className="text-destructive"
+                            >
+                              <XIcon className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>Slot</Label>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={config.slot}
+                                  onChange={(e) => handleLabwareConfigChange(
                                     taskName,
                                     labwareId,
-                                    { isSealed: checked }
+                                    { slot: parseInt(e.target.value) }
+                                  )}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Temperature (°C)</Label>
+                                <Input
+                                  type="number"
+                                  value={config.temperature}
+                                  onChange={(e) => handleLabwareConfigChange(
+                                    taskName,
+                                    labwareId,
+                                    { temperature: parseInt(e.target.value) }
                                   )}
                                 />
                               </div>
                             </div>
+
+                            <div className="flex items-center justify-between">
+                              <Label>Sealed</Label>
+                              <Switch
+                                checked={config.isSealed}
+                                onCheckedChange={(checked) => handleLabwareConfigChange(
+                                  taskName,
+                                  labwareId,
+                                  { isSealed: checked }
+                                )}
+                              />
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                <ThermometerIcon className="h-3 w-3 mr-1" />
+                                {config.temperature}°C
+                              </Badge>
+                              {config.isSealed && (
+                                <Badge variant="outline" className="text-xs">
+                                  <ShieldIcon className="h-3 w-3 mr-1" />
+                                  Sealed
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                        );
-                      })}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              ))}
             </TabsContent>
           </Tabs>
         </div>
