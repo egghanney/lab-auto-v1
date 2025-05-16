@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, ThermometerIcon, ShieldIcon, Settings2Icon, ChevronDownIcon, ChevronRightIcon, MoveIcon } from 'lucide-react';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, ThermometerIcon, ShieldIcon, Settings2Icon, ChevronDownIcon, ChevronRightIcon, MoveIcon, ArrowLeftIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -18,9 +18,10 @@ import { useState } from 'react';
 interface ConfigPanelProps {
   selectedNode: Node | null;
   onNodeUpdate: (nodeId: string, updates: any) => void;
+  onBackToInstruments?: () => void;
 }
 
-export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelProps) {
+export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstruments }: ConfigPanelProps) {
   const [openTasks, setOpenTasks] = useState<Record<string, boolean>>({});
 
   if (!selectedNode) {
@@ -85,24 +86,27 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate }: ConfigPanelP
     }));
   };
 
-  const handleDragStart = (event: React.DragEvent, task: any) => {
-    event.dataTransfer.setData('application/json', JSON.stringify(task));
-    event.dataTransfer.effectAllowed = 'copy';
-  };
-
-  const handleLabwareDragStart = (event: React.DragEvent, labware: any) => {
-    event.dataTransfer.setData('labware', JSON.stringify(labware));
-    event.dataTransfer.effectAllowed = 'copy';
-  };
-
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b bg-card">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="px-2 py-1">
-            {instrument.group}
-          </Badge>
-          <h2 className="text-lg font-semibold">Node Configuration</h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="px-2 py-1">
+              {instrument.group}
+            </Badge>
+            <h2 className="text-lg font-semibold">Node Configuration</h2>
+          </div>
+          {onBackToInstruments && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onBackToInstruments}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeftIcon className="h-4 w-4 mr-2" />
+              Instruments
+            </Button>
+          )}
         </div>
       </div>
 

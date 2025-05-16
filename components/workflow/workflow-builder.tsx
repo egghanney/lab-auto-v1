@@ -394,82 +394,85 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
             <>
               <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
                 <div className="h-full border-r flex flex-col">
-                  <div className="p-4 border-b bg-card">
-                    <h2 className="text-lg font-semibold">Workflow Builder</h2>
-                    <p className="text-sm text-muted-foreground">Design your automation workflow</p>
-                  </div>
-
                   {selectedNode ? (
                     <ConfigPanel
                       selectedNode={selectedNode}
                       onNodeUpdate={handleNodeUpdate}
+                      onBackToInstruments={() => setSelectedNode(null)}
                     />
                   ) : (
-                    <ScrollArea className="flex-1">
-                      <div className="p-4 space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Select Workcell</label>
-                          <Select 
-                            value={selectedWorkcellId} 
-                            onValueChange={setSelectedWorkcellId}
-                            disabled={isWorkcellSelectionDisabled}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choose a workcell" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {workcells.map((workcell) => (
-                                <SelectItem key={workcell.id} value={workcell.id}>
-                                  {workcell.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                    <>
+                      <div className="p-4 border-b bg-card">
+                        <h2 className="text-lg font-semibold">Workflow Builder</h2>
+                        <p className="text-sm text-muted-foreground">Design your automation workflow</p>
+                      </div>
 
-                        {selectedWorkcell && (
-                          <div className="space-y-4">
-                            <Separator />
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium">Instrument Groups</label>
-                              <div className="space-y-2">
-                                {instrumentGroups.map(group => (
-                                  <Card
-                                    key={group}
-                                    draggable
-                                    onDragStart={(e) => onDragStart(e, group)}
-                                    className="cursor-move hover:shadow-md transition-all group border-2 hover:border-primary"
-                                  >
-                                    <CardHeader className="p-3 space-y-0">
-                                      <div className="flex items-center gap-3">
-                                        <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary">
-                                          <MoveIcon className="h-5 w-5 group-hover:animate-pulse" />
-                                        </div>
-                                        <div className="flex-1">
-                                          <CardTitle className="text-sm flex items-center justify-between">
-                                            <span>{group}</span>
-                                            <Badge variant="secondary" className="group-hover:bg-primary/20">
-                                              <BeakerIcon className="h-3 w-3 mr-1" />
-                                              {instrumentsByGroup[group]?.length || 0}
-                                            </Badge>
-                                          </CardTitle>
-                                          <p className="text-xs text-muted-foreground mt-1">
-                                            Drag to add to workflow
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </CardHeader>
-                                    <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/20 rounded-lg" />
-                                    </div>
-                                  </Card>
+                      <ScrollArea className="flex-1">
+                        <div className="p-4 space-y-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Select Workcell</label>
+                            <Select 
+                              value={selectedWorkcellId} 
+                              onValueChange={setSelectedWorkcellId}
+                              disabled={isWorkcellSelectionDisabled}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Choose a workcell" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {workcells.map((workcell) => (
+                                  <SelectItem key={workcell.id} value={workcell.id}>
+                                    {workcell.name}
+                                  </SelectItem>
                                 ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {selectedWorkcell && (
+                            <div className="space-y-4">
+                              <Separator />
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Instrument Groups</label>
+                                <div className="space-y-2">
+                                  {instrumentGroups.map(group => (
+                                    <Card
+                                      key={group}
+                                      draggable
+                                      onDragStart={(e) => onDragStart(e, group)}
+                                      className="cursor-move hover:shadow-md transition-all group border-2 hover:border-primary"
+                                    >
+                                      <CardHeader className="p-3 space-y-0">
+                                        <div className="flex items-center gap-3">
+                                          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary">
+                                            <MoveIcon className="h-5 w-5 group-hover:animate-pulse" />
+                                          </div>
+                                          <div className="flex-1">
+                                            <CardTitle className="text-sm flex items-center justify-between">
+                                              <span>{group}</span>
+                                              <Badge variant="secondary" className="group-hover:bg-primary/20">
+                                                <BeakerIcon className="h-3 w-3 mr-1" />
+                                                {instrumentsByGroup[group]?.length || 0}
+                                              </Badge>
+                                            </CardTitle>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                              Drag to add to workflow
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </CardHeader>
+                                      <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/20 rounded-lg" />
+                                      </div>
+                                    </Card>
+                                  ))}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    </ScrollArea>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </>
                   )}
                 </div>
               </ResizablePanel>
