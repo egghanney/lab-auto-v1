@@ -37,10 +37,17 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
 
   const { data } = selectedNode;
   const { instrument, selectedTasks = [], selectedLabware = {}, labwareConfig = {} } = data;
-  const availableTasks = instrument.driver.tasks || [];
+  const availableTasks = instrument?.driver?.tasks || [];
 
   const handleLabwareConfigChange = (taskName: string, labwareId: string, updates: any) => {
-    const currentConfig = labwareConfig[taskName]?.[labwareId] || {};
+    const currentConfig = labwareConfig[taskName]?.[labwareId] || {
+      slot: 1,
+      startingLocation: {
+        instrumentId: '',
+        slot: 1
+      }
+    };
+    
     onNodeUpdate(selectedNode.id, {
       ...data,
       labwareConfig: {
@@ -102,7 +109,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
       <div className="p-3 border-b bg-card flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="px-2 py-1">
-            {instrument.group}
+            {instrument?.group}
           </Badge>
           <h2 className="text-sm font-medium">Configure</h2>
         </div>
@@ -173,7 +180,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                     </CardHeader>
                     <CardContent className="py-2">
                       <p className="text-sm text-muted-foreground">{task.description}</p>
-                      {task.parameters.length > 0 && (
+                      {task.parameters?.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {task.parameters.map(param => (
                             <Badge 
@@ -296,10 +303,10 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                                   <MoveIcon className="h-3 w-3 mr-1" />
                                                   Slot {config.slot}
                                                 </Badge>
-                                                {config.startingLocation.instrumentId && (
+                                                {config.startingLocation?.instrumentId && (
                                                   <Badge variant="outline" className="text-xs">
                                                     <BeakerIcon className="h-3 w-3 mr-1" />
-                                                    {instrument.instruments[config.startingLocation.instrumentId]?.driver.name} (Slot {config.startingLocation.slot})
+                                                    {instrument?.instruments?.[config.startingLocation.instrumentId]?.driver?.name} (Slot {config.startingLocation.slot})
                                                   </Badge>
                                                 )}
                                               </div>
@@ -320,7 +327,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                                   <div className="space-y-2">
                                                     <Label>Starting Location</Label>
                                                     <Select
-                                                      value={config.startingLocation.instrumentId}
+                                                      value={config.startingLocation?.instrumentId || ''}
                                                       onValueChange={(value) => handleLabwareConfigChange(
                                                         taskName,
                                                         labwareId,
@@ -336,9 +343,9 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                                         <SelectValue placeholder="Select instrument" />
                                                       </SelectTrigger>
                                                       <SelectContent>
-                                                        {Object.entries(instrument.instruments).map(([id, inst]: [string, any]) => (
+                                                        {Object.entries(instrument?.instruments || {}).map(([id, inst]: [string, any]) => (
                                                           <SelectItem key={id} value={id}>
-                                                            {inst.driver.name}
+                                                            {inst?.driver?.name}
                                                           </SelectItem>
                                                         ))}
                                                       </SelectContent>
@@ -349,7 +356,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                                       <Label>Starting Slot</Label>
                                                       <Input
                                                         type="number"
-                                                        value={config.startingLocation.slot}
+                                                        value={config.startingLocation?.slot || 1}
                                                         onChange={(e) => handleLabwareConfigChange(
                                                           taskName,
                                                           labwareId,
@@ -367,7 +374,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                                       <Label>Task Slot</Label>
                                                       <Input
                                                         type="number"
-                                                        value={config.slot}
+                                                        value={config.slot || 1}
                                                         onChange={(e) => handleLabwareConfigChange(
                                                           taskName,
                                                           labwareId,
