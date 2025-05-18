@@ -141,15 +141,146 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
     element.addEventListener('dragend', onDragEnd);
   };
 
+  const addGroupToCanvas = (group: string, position?: { x: number; y: number }) => {
+    if (!selectedWorkcell) return;
+
+    const instruments = instrumentsByGroup[group];
+    if (!instruments?.length) return;
+
+    const nodeId = `${group}-${Date.now()}`;
+    const newNode: Node = {
+      id: nodeId,
+      type: 'task',
+      position: position || {
+        x: Math.random() * 500,
+        y: Math.random() * 500,
+      },
+      data: {
+        label: group,
+        taskType: 'instrument',
+        instrument: {
+          group,
+          instruments: instruments,
+          driver: {
+            tasks: driverOptions.find(d => d.name === instruments[0].driver.name)?.tasks || []
+          }
+        },
+        selectedTasks: [],
+        selectedLabware: {},
+        labwareConfig: {},
+        taskDurations: {},
+        onTaskSelect: (taskName: string) => {
+          setNodes(nodes => nodes.map(node => {
+            if (node.id === nodeId) {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  selectedTasks: [...(node.data.selectedTasks || []), taskName],
+                  selectedLabware: {
+                    ...node.data.selectedLabware,
+                    [taskName]: []
+                  }
+                }
+              };
+            }
+            return node;
+          }));
+        },
+        onTaskRemove: (taskName: string) => {
+          setNodes(nodes => nodes.map(node => {
+            if (node.id === nodeId) {
+              const { [taskName]: removed, ...remainingLabware } = node.data.selectedLabware;
+              const { [taskName]: removedConfig, ...remainingConfig } = node.data.labwareConfig || {};
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  selectedTasks: node.data.selectedTasks.filter(t => t !== taskName),
+                  selectedLabware: remainingLabware,
+                  labwareConfig: remainingConfig
+                }
+              };
+            }
+            return node;
+          }));
+        },
+        onLabwareSelect: (taskName: string, labwareId: string) => {
+          setNodes(nodes => nodes.map(node => {
+            if (node.id === nodeId) {
+              const currentLabware = node.data.selectedLabware[taskName] || [];
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  selectedLabware: {
+                    ...node.data.selectedLabware,
+                    [taskName]: [...currentLabware, labwareId]
+                  }
+                }
+              };
+            }
+            return node;
+          }));
+        },
+        onLabwareRemove: (taskName: string, labwareId: string) => {
+          setNodes(nodes => nodes.map(node => {
+            if (node.id === nodeId) {
+              const currentLabware = node.data.selectedLabware[taskName] || [];
+              const { [taskName]: removedConfig, ...remainingConfig } = node.data.labwareConfig || {};
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  selectedLabware: {
+                    ...node.data.selectedLabware,
+                    [taskName]: currentLabware.filter(id => id !== labwareId)
+                  },
+                  labwareConfig: {
+                    ...remainingConfig,
+                    [taskName]: Object.fromEntries(
+                      Object.entries(removedConfig || {}).filter(([key]) => key !== labwareId)
+                    )
+                  }
+                }
+              };
+            }
+            return node;
+          }));
+        },
+        onLabwareConfigUpdate: (taskName: string, labwareId: string, config: any) => {
+          setNodes(nodes => nodes.map(node => {
+            if (node.id === nodeId) {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  labwareConfig: {
+                    ...node.data.labwareConfig,
+                    [taskName]: {
+                      ...(node.data.labwareConfig?.[taskName] || {}),
+                      [labwareId]: config
+                    }
+                  }
+                }
+              };
+            }
+            return node;
+          }));
+        },
+        onDelete: () => onDeleteNode(nodeId)
+      }
+    };
+
+    setNodes(nodes => [...nodes, newNode]);
+  };
+
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
 
       const group = event.dataTransfer.getData('application/instrumentGroup');
       if (!group || !selectedWorkcell) return;
-
-      const instruments = instrumentsByGroup[group];
-      if (!instruments?.length) return;
 
       const { clientX, clientY } = event;
       const reactFlowBounds = event.currentTarget.getBoundingClientRect();
@@ -158,129 +289,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
         y: clientY - reactFlowBounds.top,
       };
 
-      const nodeId = `${group}-${Date.now()}`;
-      const newNode: Node = {
-        id: nodeId,
-        type: 'task',
-        position,
-        data: {
-          label: group,
-          taskType: 'instrument',
-          instrument: {
-            group,
-            instruments: instruments,
-            driver: {
-              tasks: driverOptions.find(d => d.name === instruments[0].driver.name)?.tasks || []
-            }
-          },
-          selectedTasks: [],
-          selectedLabware: {},
-          labwareConfig: {},
-          taskDurations: {},
-          onTaskSelect: (taskName: string) => {
-            setNodes(nodes => nodes.map(node => {
-              if (node.id === nodeId) {
-                return {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    selectedTasks: [...(node.data.selectedTasks || []), taskName],
-                    selectedLabware: {
-                      ...node.data.selectedLabware,
-                      [taskName]: []
-                    }
-                  }
-                };
-              }
-              return node;
-            }));
-          },
-          onTaskRemove: (taskName: string) => {
-            setNodes(nodes => nodes.map(node => {
-              if (node.id === nodeId) {
-                const { [taskName]: removed, ...remainingLabware } = node.data.selectedLabware;
-                const { [taskName]: removedConfig, ...remainingConfig } = node.data.labwareConfig || {};
-                return {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    selectedTasks: node.data.selectedTasks.filter(t => t !== taskName),
-                    selectedLabware: remainingLabware,
-                    labwareConfig: remainingConfig
-                  }
-                };
-              }
-              return node;
-            }));
-          },
-          onLabwareSelect: (taskName: string, labwareId: string) => {
-            setNodes(nodes => nodes.map(node => {
-              if (node.id === nodeId) {
-                const currentLabware = node.data.selectedLabware[taskName] || [];
-                return {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    selectedLabware: {
-                      ...node.data.selectedLabware,
-                      [taskName]: [...currentLabware, labwareId]
-                    }
-                  }
-                };
-              }
-              return node;
-            }));
-          },
-          onLabwareRemove: (taskName: string, labwareId: string) => {
-            setNodes(nodes => nodes.map(node => {
-              if (node.id === nodeId) {
-                const currentLabware = node.data.selectedLabware[taskName] || [];
-                const { [taskName]: removedConfig, ...remainingConfig } = node.data.labwareConfig || {};
-                return {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    selectedLabware: {
-                      ...node.data.selectedLabware,
-                      [taskName]: currentLabware.filter(id => id !== labwareId)
-                    },
-                    labwareConfig: {
-                      ...remainingConfig,
-                      [taskName]: Object.fromEntries(
-                        Object.entries(removedConfig || {}).filter(([key]) => key !== labwareId)
-                      )
-                    }
-                  }
-                };
-              }
-              return node;
-            }));
-          },
-          onLabwareConfigUpdate: (taskName: string, labwareId: string, config: any) => {
-            setNodes(nodes => nodes.map(node => {
-              if (node.id === nodeId) {
-                return {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    labwareConfig: {
-                      ...node.data.labwareConfig,
-                      [taskName]: {
-                        ...(node.data.labwareConfig?.[taskName] || {}),
-                        [labwareId]: config
-                      }
-                    }
-                  }
-                };
-              }
-              return node;
-            }));
-          },
-          onDelete: () => onDeleteNode(nodeId)
-        }
-      };
-
-      setNodes(nodes => [...nodes, newNode]);
+      addGroupToCanvas(group, position);
     },
     [selectedWorkcell, instrumentsByGroup, setNodes]
   );
@@ -443,22 +452,32 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                                       className="cursor-move hover:shadow-md transition-all group border-2 hover:border-primary"
                                     >
                                       <CardHeader className="p-3 space-y-0">
-                                        <div className="flex items-center gap-3">
-                                          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary">
-                                            <MoveIcon className="h-5 w-5 group-hover:animate-pulse" />
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3">
+                                            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary">
+                                              <MoveIcon className="h-5 w-5 group-hover:animate-pulse" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <CardTitle className="text-sm flex items-center justify-between">
+                                                <span>{group}</span>
+                                                <Badge variant="secondary" className="group-hover:bg-primary/20">
+                                                  <BeakerIcon className="h-3 w-3 mr-1" />
+                                                  {instrumentsByGroup[group]?.length || 0}
+                                                </Badge>
+                                              </CardTitle>
+                                              <p className="text-xs text-muted-foreground mt-1">
+                                                Drag to add to workflow
+                                              </p>
+                                            </div>
                                           </div>
-                                          <div className="flex-1">
-                                            <CardTitle className="text-sm flex items-center justify-between">
-                                              <span>{group}</span>
-                                              <Badge variant="secondary" className="group-hover:bg-primary/20">
-                                                <BeakerIcon className="h-3 w-3 mr-1" />
-                                                {instrumentsByGroup[group]?.length || 0}
-                                              </Badge>
-                                            </CardTitle>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                              Drag to add to workflow
-                                            </p>
-                                          </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => addGroupToCanvas(group)}
+                                          >
+                                            <PlusIcon className="h-4 w-4" />
+                                          </Button>
                                         </div>
                                       </CardHeader>
                                       <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
