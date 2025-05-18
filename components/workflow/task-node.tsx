@@ -1,7 +1,7 @@
 import { Handle, NodeProps, Position } from 'reactflow';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
-import { BeakerIcon, CheckIcon, ChevronDownIcon, TrashIcon, XIcon, ThermometerIcon, ScanBarcodeIcon, DropletIcon, ShieldIcon, Settings2Icon } from 'lucide-react';
+import { BeakerIcon, CheckIcon, ChevronDownIcon, TrashIcon, XIcon, Settings2Icon, MoveIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import {
   DropdownMenu,
@@ -11,29 +11,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
   DropdownMenuGroup,
-} from '../ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import { labwareOptions } from '@/lib/types/labware';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Switch } from '../ui/switch';
 import { Separator } from '../ui/separator';
 import { ScrollArea } from '../ui/scroll-area';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface LabwareConfig {
   type: string;
   slot: number;
-  barcode?: string;
-  maxVolume?: number;
-  initialVolume?: number;
-  temperature?: number;
-  isSealed?: boolean;
-  reagentMapping?: Record<string, string>;
-  compatibleInstruments?: string[];
-  isReadOnly?: boolean;
-  taskAssignment?: string[];
-  capacityUsed?: number;
+  instrumentId: string;
 }
 
 interface TaskNodeProps extends NodeProps {
@@ -69,15 +64,7 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
     return (labwareConfig[taskName]?.[labwareId]) || {
       type: labwareOptions.find(l => l.id === labwareId)?.type || '',
       slot: 1,
-      maxVolume: 0,
-      initialVolume: 0,
-      temperature: 25,
-      isSealed: false,
-      reagentMapping: {},
-      compatibleInstruments: [],
-      isReadOnly: false,
-      taskAssignment: [],
-      capacityUsed: 0
+      instrumentId: ''
     };
   };
 
@@ -92,15 +79,51 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
       ...updates
     });
   };
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    try {
+      // Check for task data first
+      const taskData = event.dataTransfer.getData('application/json');
+      if (taskData) {
+        const task = JSON.parse(taskData);
+        if (task && task.name && !selectedTasks.includes(task.name)) {
+          onTaskSelect(task.name);
+          return;
+        }
+      }
+
+      // Check for labware data
+      const labwareData = event.dataTransfer.getData('labware');
+      if (labwareData) {
+        const { id, taskName } = JSON.parse(labwareData);
+        if (!selectedLabware[taskName]?.includes(id)) {
+          onLabwareSelect(taskName, id);
+        }
+      }
+    } catch (error) {
+      console.error('Error handling drop:', error);
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'copy';
+  };
   
   return (
-    <div
+    <div 
       className={cn(
         'px-4 py-3 rounded-xl border-2 shadow-lg backdrop-blur-sm min-w-[280px] transition-all duration-200 group relative',
         'bg-gradient-to-br from-primary-50 to-primary-100/50 border-primary-200 hover:border-primary-300',
         'dark:from-primary-950 dark:to-primary-900/50 dark:border-primary-800 dark:hover:border-primary-700',
         selected && 'ring-2 ring-primary ring-offset-2 dark:ring-offset-background'
       )}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
     >
       <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-3 w-6 h-6 flex items-center justify-center">
         <Handle
@@ -127,10 +150,12 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
           className="flex items-center gap-1 font-medium"
         >
           <BeakerIcon className="h-4 w-4" />
-          {instrument.driver.name}
+          {instrument.group}
         </Badge>
         <div className="flex items-center gap-2">
-          <Badge variant="outline">v{instrument.driver.version}</Badge>
+          <Badge variant="outline">
+            {instrument.instruments.length} instruments
+          </Badge>
           <Button
             variant="ghost"
             size="icon"
@@ -156,7 +181,7 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                {instrument.driver.tasks?.map(task => (
+                {instrument.driver.tasks?.map((task: any) => (
                   <DropdownMenuItem
                     key={task.name}
                     onClick={() => onTaskSelect(task.name)}
@@ -180,7 +205,7 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
           {selectedTasks.length > 0 && (
             <div className="space-y-2">
               {selectedTasks.map(taskName => {
-                const task = instrument.driver.tasks?.find(t => t.name === taskName);
+                const task = instrument.driver.tasks?.find((t: any) => t.name === taskName);
                 const taskLabware = selectedLabware[taskName] || [];
                 
                 return (
@@ -190,7 +215,7 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                         <div className="text-sm font-medium">{taskName}</div>
                         {task?.parameters && task.parameters.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
-                            {task.parameters.map(param => (
+                            {task.parameters.map((param: string) => (
                               <Badge key={param} variant="secondary" className="text-xs">
                                 {param}
                               </Badge>
@@ -260,36 +285,39 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                         </DialogHeader>
                                         <ScrollArea className="h-[300px]">
                                           <div className="space-y-4 py-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                              <div className="space-y-2">
-                                                <Label>Slot Number</Label>
-                                                <Input
-                                                  type="number"
-                                                  value={config.slot}
-                                                  onChange={(e) => handleConfigUpdate(taskName, labwareId, {
-                                                    slot: parseInt(e.target.value)
-                                                  })}
-                                                  min={1}
-                                                />
-                                              </div>
-                                              <div className="space-y-2">
-                                                <Label>Temperature (°C)</Label>
-                                                <Input
-                                                  type="number"
-                                                  value={config.temperature}
-                                                  onChange={(e) => handleConfigUpdate(taskName, labwareId, {
-                                                    temperature: parseInt(e.target.value)
-                                                  })}
-                                                />
-                                              </div>
+                                            <div className="space-y-2">
+                                              <Label>Instrument</Label>
+                                              <Select
+                                                value={config.instrumentId}
+                                                onValueChange={(value) => handleConfigUpdate(
+                                                  taskName,
+                                                  labwareId,
+                                                  { instrumentId: value }
+                                                )}
+                                              >
+                                                <SelectTrigger>
+                                                  <SelectValue placeholder="Select instrument" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {Object.entries(instrument.instruments).map(([id, inst]: [string, any]) => (
+                                                    <SelectItem key={id} value={id}>
+                                                      {inst.driver.name}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
                                             </div>
-                                            <div className="flex items-center justify-between">
-                                              <Label>Sealed</Label>
-                                              <Switch
-                                                checked={config.isSealed}
-                                                onCheckedChange={(checked) => handleConfigUpdate(taskName, labwareId, {
-                                                  isSealed: checked
-                                                })}
+                                            <div className="space-y-2">
+                                              <Label>Slot</Label>
+                                              <Input
+                                                type="number"
+                                                value={config.slot}
+                                                onChange={(e) => handleConfigUpdate(
+                                                  taskName,
+                                                  labwareId,
+                                                  { slot: parseInt(e.target.value) }
+                                                )}
+                                                min={1}
                                               />
                                             </div>
                                           </div>
@@ -307,17 +335,26 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                   </div>
                                 </div>
                                 {config && (
-                                  <div className="mt-1 flex flex-wrap gap-1">
+                                  <div className="mt-1">
                                     <Badge variant="outline" className="text-xs justify-start">
-                                      <ThermometerIcon className="h-3 w-3 mr-1" />
-                                      {config.temperature}°C
+                                      {config.instrumentId ? (
+                                        <>
+                                          <BeakerIcon className="h-3 w-3 mr-1" />
+                                          {instrument.instruments[config.instrumentId]?.driver.name}
+                                          {config.slot > 0 && (
+                                            <>
+                                              <span className="mx-1">•</span>
+                                              Slot {config.slot}
+                                            </>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <MoveIcon className="h-3 w-3 mr-1" />
+                                          {config.slot > 0 && `Slot ${config.slot}`}
+                                        </>
+                                      )}
                                     </Badge>
-                                    {config.isSealed && (
-                                      <Badge variant="outline" className="text-xs justify-start">
-                                        <ShieldIcon className="h-3 w-3 mr-1" />
-                                        Sealed
-                                      </Badge>
-                                    )}
                                   </div>
                                 )}
                               </div>

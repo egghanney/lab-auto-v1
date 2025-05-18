@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -20,10 +20,10 @@ import 'reactflow/dist/style.css';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import TaskNode from './task-node';
+import ConfigPanel from './config-panel';
 import { 
   ChevronDownIcon,
   ChevronRightIcon,
-  ChevronUpIcon,
   FileJsonIcon, 
   GripVerticalIcon, 
   MinusIcon,
@@ -35,6 +35,9 @@ import {
   SearchIcon,
   Settings2Icon,
   XIcon,
+  GripHorizontalIcon,
+  MoveIcon,
+  BeakerIcon
 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
@@ -88,7 +91,7 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Node | null>(null);
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedWorkcellId, setSelectedWorkcellId] = useState<string>('');
   const [selectedInstrumentId, setSelectedInstrumentId] = useState<string>('');
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -98,87 +101,74 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
   const router = useRouter();
 
   const { workcells, isLoading } = useWorkcells();
-
-  // Load saved state from localStorage
-  useEffect(() => {
-    const savedState = localStorage.getItem(STORAGE_KEY);
-    if (savedState) {
-      try {
-        const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedState);
-        setNodes(savedNodes);
-        setEdges(savedEdges);
-      } catch (error) {
-        console.error('Error loading saved state:', error);
-      }
-    }
-  }, [setNodes, setEdges]);
-
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    const state = {
-      nodes,
-      edges,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [nodes, edges]);
-
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge({ ...params, ...edgeOptions }, eds)),
-    [setEdges]
-  );
-
-  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-    setSelectedTask(node);
-  }, []);
-
-  const onDeleteNode = useCallback((nodeId: string) => {
-    setNodes(nodes => nodes.filter(node => node.id !== nodeId));
-    setEdges(edges => edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId));
-    if (selectedTask?.id === nodeId) {
-      setSelectedTask(null);
-    }
-  }, [setNodes, setEdges, selectedTask]);
-
-  const handleZoomIn = useCallback(() => {
-    setZoomLevel(z => Math.min(z + 0.2, 2));
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    setZoomLevel(z => Math.max(z - 0.2, 0.2));
-  }, []);
-
   const selectedWorkcell = workcells.find(w => w.id === selectedWorkcellId);
-  const selectedInstrument = selectedWorkcell?.instruments[selectedInstrumentId];
 
-  const isWorkcellSelectionDisabled = nodes.length > 0;
+  const instrumentGroups = useMemo(() => {
+    if (!selectedWorkcell) return [];
+    
+    const groups = new Set(
+      Object.values(selectedWorkcell.instruments).map(i => i.driver.group)
+    );
+    return Array.from(groups);
+  }, [selectedWorkcell]);
 
-  const createInstrumentNode = useCallback(() => {
-    if (!selectedInstrument) return;
+  const instrumentsByGroup = useMemo(() => {
+    if (!selectedWorkcell) return {};
+    
+    return Object.entries(selectedWorkcell.instruments).reduce((acc, [id, instrument]) => {
+      const group = instrument.driver.group;
+      if (!acc[group]) {
+        acc[group] = [];
+      }
+      acc[group].push({ id, ...instrument });
+      return acc;
+    }, {} as Record<string, any[]>);
+  }, [selectedWorkcell]);
 
-    const nodeCount = nodes.length;
-    const position = {
-      x: 100 + (nodeCount * 50),
-      y: 100 + (nodeCount * 50)
+  const onDragStart = (event: React.DragEvent, group: string) => {
+    event.dataTransfer.setData('application/instrumentGroup', group);
+    event.dataTransfer.effectAllowed = 'move';
+    
+    const element = event.currentTarget as HTMLElement;
+    element.style.opacity = '0.5';
+    element.style.transform = 'scale(1.02)';
+    
+    const onDragEnd = () => {
+      element.style.opacity = '';
+      element.style.transform = '';
+      element.removeEventListener('dragend', onDragEnd);
     };
+    element.addEventListener('dragend', onDragEnd);
+  };
 
-    const nodeId = `${selectedInstrumentId}-${Date.now()}`;
+  const addGroupToCanvas = (group: string, position?: { x: number; y: number }) => {
+    if (!selectedWorkcell) return;
+
+    const instruments = instrumentsByGroup[group];
+    if (!instruments?.length) return;
+
+    const nodeId = `${group}-${Date.now()}`;
     const newNode: Node = {
       id: nodeId,
       type: 'task',
-      position,
+      position: position || {
+        x: Math.random() * 500,
+        y: Math.random() * 500,
+      },
       data: {
-        label: selectedInstrumentId,
+        label: group,
         taskType: 'instrument',
         instrument: {
-          ...selectedInstrument,
+          group,
+          instruments: instruments,
           driver: {
-            ...selectedInstrument.driver,
-            tasks: driverOptions.find(d => d.name === selectedInstrument.driver.name)?.tasks || []
+            tasks: driverOptions.find(d => d.name === instruments[0].driver.name)?.tasks || []
           }
         },
         selectedTasks: [],
         selectedLabware: {},
         labwareConfig: {},
+        taskDurations: {},
         onTaskSelect: (taskName: string) => {
           setNodes(nodes => nodes.map(node => {
             if (node.id === nodeId) {
@@ -218,32 +208,14 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
         onLabwareSelect: (taskName: string, labwareId: string) => {
           setNodes(nodes => nodes.map(node => {
             if (node.id === nodeId) {
+              const currentLabware = node.data.selectedLabware[taskName] || [];
               return {
                 ...node,
                 data: {
                   ...node.data,
                   selectedLabware: {
                     ...node.data.selectedLabware,
-                    [taskName]: [...(node.data.selectedLabware[taskName] || []), labwareId]
-                  },
-                  labwareConfig: {
-                    ...node.data.labwareConfig,
-                    [taskName]: {
-                      ...(node.data.labwareConfig?.[taskName] || {}),
-                      [labwareId]: {
-                        type: labwareOptions.find(l => l.id === labwareId)?.type || '',
-                        slot: 1,
-                        maxVolume: 0,
-                        initialVolume: 0,
-                        temperature: 25,
-                        isSealed: false,
-                        reagentMapping: {},
-                        compatibleInstruments: [],
-                        isReadOnly: false,
-                        taskAssignment: [],
-                        capacityUsed: 0
-                      }
-                    }
+                    [taskName]: [...currentLabware, labwareId]
                   }
                 }
               };
@@ -254,18 +226,21 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
         onLabwareRemove: (taskName: string, labwareId: string) => {
           setNodes(nodes => nodes.map(node => {
             if (node.id === nodeId) {
-              const { [labwareId]: removedConfig, ...remainingConfig } = node.data.labwareConfig?.[taskName] || {};
+              const currentLabware = node.data.selectedLabware[taskName] || [];
+              const { [taskName]: removedConfig, ...remainingConfig } = node.data.labwareConfig || {};
               return {
                 ...node,
                 data: {
                   ...node.data,
                   selectedLabware: {
                     ...node.data.selectedLabware,
-                    [taskName]: node.data.selectedLabware[taskName].filter(id => id !== labwareId)
+                    [taskName]: currentLabware.filter(id => id !== labwareId)
                   },
                   labwareConfig: {
-                    ...node.data.labwareConfig,
-                    [taskName]: remainingConfig
+                    ...remainingConfig,
+                    [taskName]: Object.fromEntries(
+                      Object.entries(removedConfig || {}).filter(([key]) => key !== labwareId)
+                    )
                   }
                 }
               };
@@ -298,328 +273,127 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
     };
 
     setNodes(nodes => [...nodes, newNode]);
-  }, [selectedInstrument, selectedInstrumentId, setNodes, nodes.length, onDeleteNode]);
-
-  const handleSave = () => {
-    if (nodes.length === 0) {
-      toast({
-        title: 'Error',
-        description: 'Please add at least one instrument to the workflow before saving.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    const config = generateWorkflowConfig();
-    if (onSave) {
-      onSave(config);
-    }
-    toast({
-      title: 'Success',
-      description: 'Workflow saved successfully',
-    });
   };
 
-  const handleStartRun = async () => {
-    if (nodes.length === 0) {
-      toast({
-        title: 'Error',
-        description: 'Please add at least one instrument to the workflow before starting a run.',
-        variant: 'destructive'
-      });
-      return;
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const group = event.dataTransfer.getData('application/instrumentGroup');
+      if (!group || !selectedWorkcell) return;
+
+      const { clientX, clientY } = event;
+      const reactFlowBounds = event.currentTarget.getBoundingClientRect();
+      const position = {
+        x: clientX - reactFlowBounds.left,
+        y: clientY - reactFlowBounds.top,
+      };
+
+      addGroupToCanvas(group, position);
+    },
+    [selectedWorkcell, instrumentsByGroup, setNodes]
+  );
+
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds) => addEdge({ ...params, ...edgeOptions }, eds)),
+    [setEdges]
+  );
+
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    setSelectedNode(node);
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null);
+  }, []);
+
+  const onDeleteNode = useCallback((nodeId: string) => {
+    setNodes(nodes => nodes.filter(node => node.id !== nodeId));
+    setEdges(edges => edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId));
+    if (selectedNode?.id === nodeId) {
+      setSelectedNode(null);
     }
+  }, [setNodes, setEdges, selectedNode]);
 
-    if (!selectedWorkcellId) {
-      toast({
-        title: 'Error',
-        description: 'Please select a workcell first.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    try {
-      // Save the workflow first
-      const config = generateWorkflowConfig();
-      if (onSave) {
-        await onSave(config);
-      }
-
-      // Mock API call to start the run
-      const runId = Date.now().toString();
-      
-      // Redirect to the run page
-      router.push(`/dashboard/runs/${runId}`);
-      
-      toast({
-        title: 'Success',
-        description: 'Run started successfully',
-      });
-    } catch (error) {
-      console.error('Error starting run:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to start the run. Please try again.',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const generateWorkflowConfig = (): WorkflowConfig => {
-    const tasks: Record<string, Task> = {};
-    const instruments: Record<string, WorkflowInstrument> = {};
-    const labware: Record<string, Labware> = {};
-
-    nodes.forEach((node) => {
-      // Add instruments
-      if (node.data.instrument) {
-        instruments[node.id] = {
-          id: node.id,
-          type: node.data.instrument.driver.name,
-          capacity: node.data.instrument.driver.config.capacity || 1
+  const handleNodeUpdate = useCallback((nodeId: string, updates: any) => {
+    setNodes(nodes => nodes.map(node => {
+      if (node.id === nodeId) {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            ...updates
+          }
         };
       }
+      return node;
+    }));
+  }, [setNodes]);
 
-      // Add tasks
-      node.data.selectedTasks?.forEach((taskName: string) => {
-        const taskId = `${node.id}-${taskName}`;
-        const task = node.data.instrument.driver.tasks?.find((t: any) => t.name === taskName);
-        
-        if (task) {
-          const selectedLabware = node.data.selectedLabware[taskName] || [];
-          const labwareConfig = node.data.labwareConfig?.[taskName] || {};
+  const handleZoomIn = useCallback(() => {
+    setZoomLevel(z => Math.min(z + 0.2, 2));
+  }, []);
 
-          // Create task configuration
-          const taskConfig: ActionTask = {
-            id: taskId,
-            instrument_type: node.data.instrument.driver.name,
-            duration: task.duration || 10,
-            dependencies: [],
-            arguments: {},
-            action: taskName,
-            required_labware: {}
-          };
+  const handleZoomOut = useCallback(() => {
+    setZoomLevel(z => Math.max(z - 0.2, 0.2));
+  }, []);
 
-          // Add labware configurations
-          selectedLabware.forEach((labwareId: string) => {
-            const config = labwareConfig[labwareId] || {};
-            
-            taskConfig.required_labware[labwareId] = {
-              id: labwareId,
-              initial_slot: config.slot || 1,
-              final_slot: config.slot || 1,
-              quantity: 1
-            };
+  const isWorkcellSelectionDisabled = nodes.length > 0;
 
-            // Add labware to global labware config if not exists
-            if (!labware[labwareId]) {
-              labware[labwareId] = {
-                id: labwareId,
-                starting_location: {
-                  instrument_id: node.id,
-                  slot: config.slot || 1
-                }
-              };
-            }
-          });
-
-          tasks[taskId] = taskConfig;
-        }
-      });
-    });
-
-    return {
-      tasks,
-      instruments,
-      labware,
+  const getWorkflowJson = useCallback(() => {
+    const workflow: WorkflowConfig = {
+      tasks: {},
+      instruments: {},
+      labware: {},
       history: {},
       time_constraints: [],
       instrument_blocks: []
     };
-  };
 
-  const jsonOutput = useMemo(() => {
-    const config = generateWorkflowConfig();
-    return JSON.stringify(config, null, 2);
-  }, [nodes, edges]);
+    nodes.forEach(node => {
+      const { selectedTasks, selectedLabware, labwareConfig, taskDurations } = node.data;
+      selectedTasks.forEach((taskName: string) => {
+        const taskId = `${node.id}-${taskName}`;
+        workflow.tasks[taskId] = {
+          id: taskId,
+          instrument_type: node.data.instrument.group,
+          duration: taskDurations?.[taskName] || 5,
+          dependencies: [],
+          arguments: {},
+          action: taskName,
+          required_labware: {}
+        };
 
-  const renderSelectedTasks = () => {
-    if (!selectedTask) return null;
-
-    return selectedTask.data.selectedTasks.map(taskName => {
-      const task = selectedTask.data.instrument.driver.tasks?.find(t => t.name === taskName);
-      const taskLabware = selectedTask.data.selectedLabware[taskName] || [];
-      const isOpen = openTaskLabware === taskName;
-      
-      return (
-        <Card key={taskName} className="p-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium text-sm">{taskName}</div>
-              {task?.parameters && task.parameters.length > 0 && (
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {task.parameters.map(param => (
-                    <Badge key={param} variant="secondary" className="text-xs">
-                      {param}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => setOpenTaskLabware(isOpen ? null : taskName)}
-              >
-                {isOpen ? (
-                  <ChevronUpIcon className="h-4 w-4" />
-                ) : (
-                  <ChevronDownIcon className="h-4 w-4" />
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 hover:text-destructive"
-                onClick={() => selectedTask.data.onTaskRemove(taskName)}
-              >
-                <XIcon className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <Collapsible open={isOpen}>
-            <CollapsibleContent className="mt-2 space-y-2">
-              <div className="text-xs font-medium text-muted-foreground mb-2">Available Labware</div>
-              {labwareOptions.map(labware => (
-                <Card key={labware.id} className="p-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm font-medium">{labware.name}</div>
-                      <div className="text-xs text-muted-foreground">{labware.description}</div>
-                      <Badge variant="secondary" className="mt-1 text-xs">
-                        {labware.slots} slots
-                      </Badge>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => selectedTask.data.onLabwareSelect(taskName, labware.id)}
-                      disabled={taskLabware.includes(labware.id)}
-                    >
-                      Add
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-
-              {taskLabware.length > 0 && (
-                <>
-                  <Separator className="my-2" />
-                  <div className="text-xs font-medium text-muted-foreground mb-2">Selected Labware</div>
-                  <div className="space-y-2">
-                    {taskLabware.map(labwareId => {
-                      const labware = labwareOptions.find(l => l.id === labwareId);
-                      const config = selectedTask.data.labwareConfig?.[taskName]?.[labwareId] || {};
-                      
-                      return (
-                        <div key={labwareId} className="bg-muted rounded p-2">
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs font-medium">{labware?.name}</div>
-                            <div className="flex items-center gap-1">
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                                    <Settings2Icon className="h-3 w-3" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Configure {labware?.name}</DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div className="space-y-2">
-                                        <Label>Slot Number</Label>
-                                        <Input
-                                          type="number"
-                                          value={config.slot || 1}
-                                          onChange={(e) => selectedTask.data.onLabwareConfigUpdate(taskName, labwareId, {
-                                            ...config,
-                                            slot: parseInt(e.target.value)
-                                          })}
-                                          min={1}
-                                        />
-                                      </div>
-                                      <div className="space-y-2">
-                                        <Label>Temperature (°C)</Label>
-                                        <Input
-                                          type="number"
-                                          value={config.temperature || 25}
-                                          onChange={(e) => selectedTask.data.onLabwareConfigUpdate(taskName, labwareId, {
-                                            ...config,
-                                            temperature: parseInt(e.target.value)
-                                          })}
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                      <Label>Sealed</Label>
-                                      <Switch
-                                        checked={config.isSealed || false}
-                                        onCheckedChange={(checked) => selectedTask.data.onLabwareConfigUpdate(taskName, labwareId, {
-                                          ...config,
-                                          isSealed: checked
-                                        })}
-                                      />
-                                    </div>
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 hover:text-destructive"
-                                onClick={() => selectedTask.data.onLabwareRemove(taskName, labwareId)}
-                              >
-                                <XIcon className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                          {config && (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              <Badge variant="outline" className="text-xs">
-                                Slot {config.slot || 1}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {config.temperature || 25}°C
-                              </Badge>
-                              {config.isSealed && (
-                                <Badge variant="outline" className="text-xs">
-                                  Sealed
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-      );
+        if (selectedLabware[taskName]) {
+          selectedLabware[taskName].forEach((labwareId: string) => {
+            const config = labwareConfig?.[taskName]?.[labwareId];
+            if (config) {
+              workflow.tasks[taskId].required_labware[labwareId] = {
+                id: labwareId,
+                initial_slot: config.slot,
+                final_slot: config.slot,
+                quantity: 1
+              };
+            }
+          });
+        }
+      });
     });
-  };
 
-  if (isLoading) {
-    return <div>Loading workcells...</div>;
-  }
+    return workflow;
+  }, [nodes]);
+
+  useEffect(() => {
+    if (showRightPanel) {
+      const workflow = getWorkflowJson();
+      console.log('Current Workflow:', workflow);
+    }
+  }, [showRightPanel, nodes, getWorkflowJson]);
 
   return (
     <ReactFlowProvider>
@@ -628,130 +402,97 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
           {showLeftPanel && (
             <>
               <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
-                <div className="h-full border-r">
-                  <div className="p-4 border-b bg-card">
-                    <h2 className="text-lg font-semibold">Workflow Builder</h2>
-                    <p className="text-sm text-muted-foreground">Design your automation workflow</p>
-                  </div>
-                  <ScrollArea className="h-[calc(100vh-16rem)]">
-                    <div className="p-4 space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Select Workcell</label>
-                        <Select 
-                          value={selectedWorkcellId} 
-                          onValueChange={setSelectedWorkcellId}
-                          disabled={isWorkcellSelectionDisabled}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose a workcell" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {workcells.map((workcell) => (
-                              <SelectItem key={workcell.id} value={workcell.id}>
-                                {workcell.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {isWorkcellSelectionDisabled && (
-                          <p className="text-xs text-muted-foreground">
-                            Workcell cannot be changed after adding nodes
-                          </p>
-                        )}
+                <div className="h-full border-r flex flex-col">
+                  {selectedNode ? (
+                    <ConfigPanel
+                      selectedNode={selectedNode}
+                      onNodeUpdate={handleNodeUpdate}
+                      onBackToInstruments={() => setSelectedNode(null)}
+                    />
+                  ) : (
+                    <>
+                      <div className="p-4 border-b bg-card">
+                        <h2 className="text-lg font-semibold">Workflow Builder</h2>
+                        <p className="text-sm text-muted-foreground">Design your automation workflow</p>
                       </div>
 
-                      {selectedWorkcell && (
-                        <div className="space-y-4">
-                          <Separator />
+                      <ScrollArea className="flex-1">
+                        <div className="p-4 space-y-4">
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Select Instrument</label>
-                            <Select value={selectedInstrumentId} onValueChange={setSelectedInstrumentId}>
+                            <label className="text-sm font-medium">Select Workcell</label>
+                            <Select 
+                              value={selectedWorkcellId} 
+                              onValueChange={setSelectedWorkcellId}
+                              disabled={isWorkcellSelectionDisabled}
+                            >
                               <SelectTrigger>
-                                <SelectValue placeholder="Choose an instrument" />
+                                <SelectValue placeholder="Choose a workcell" />
                               </SelectTrigger>
                               <SelectContent>
-                                {Object.entries(selectedWorkcell.instruments).map(([id, instrument]) => (
-                                  <SelectItem key={id} value={id}>
-                                    {id} - {instrument.driver.name}
+                                {workcells.map((workcell) => (
+                                  <SelectItem key={workcell.id} value={workcell.id}>
+                                    {workcell.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
 
-                          {selectedInstrument && (
+                          {selectedWorkcell && (
                             <div className="space-y-4">
-                              <Button 
-                                className="w-full" 
-                                onClick={createInstrumentNode}
-                                disabled={!selectedInstrument}
-                              >
-                                Add to Workflow
-                              </Button>
-
-                              {selectedTask && (
-                                <>
-                                  <Separator />
-                                  <div className="space-y-4">
-                                    <div className="space-y-2">
-                                      <Label>Node Label</Label>
-                                      <Input 
-                                        value={selectedTask.data.label}
-                                        onChange={(e) => {
-                                          setNodes(nodes => nodes.map(node => 
-                                            node.id === selectedTask.id 
-                                              ? { ...node, data: { ...node.data, label: e.target.value } }
-                                              : node
-                                          ));
-                                        }}
-                                      />
-                                    </div>
-
-                                    <Collapsible open={isTaskListOpen} onOpenChange={setIsTaskListOpen}>
-                                      <CollapsibleTrigger asChild>
-                                        <Button variant="ghost" className="w-full flex items-center justify-between">
-                                          <span>Available Tasks</span>
-                                          {isTaskListOpen ? (
-                                            <ChevronUpIcon className="h-4 w-4" />
-                                          ) : (
-                                            <ChevronDownIcon className="h-4 w-4" />
-                                          )}
-                                        </Button>
-                                      </CollapsibleTrigger>
-                                      <CollapsibleContent className="space-y-2">
-                                        {selectedTask.data.instrument.driver.tasks?.map(task => (
-                                          <Card key={task.name} className="p-2">
-                                            <div className="flex items-center justify-between">
-                                              <div>
-                                                <div className="font-medium text-sm">{task.name}</div>
-                                                <div className="text-xs text-muted-foreground">{task.description}</div>
-                                              </div>
-                                              <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => selectedTask.data.onTaskSelect(task.name)}
-                                                disabled={selectedTask.data.selectedTasks.includes(task.name)}
-                                              >
-                                                Add
-                                              </Button>
+                              <Separator />
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Instrument Groups</label>
+                                <div className="space-y-2">
+                                  {instrumentGroups.map(group => (
+                                    <Card
+                                      key={group}
+                                      draggable
+                                      onDragStart={(e) => onDragStart(e, group)}
+                                      className="cursor-move hover:shadow-md transition-all group border-2 hover:border-primary"
+                                    >
+                                      <CardHeader className="p-3 space-y-0">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3">
+                                            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary">
+                                              <MoveIcon className="h-5 w-5 group-hover:animate-pulse" />
                                             </div>
-                                          </Card>
-                                        ))}
-                                      </CollapsibleContent>
-                                    </Collapsible>
-
-                                    <div className="space-y-2">
-                                      {renderSelectedTasks()}
-                                    </div>
-                                  </div>
-                                </>
-                              )}
+                                            <div className="flex-1">
+                                              <CardTitle className="text-sm flex items-center justify-between">
+                                                <span>{group}</span>
+                                                <Badge variant="secondary" className="group-hover:bg-primary/20">
+                                                  <BeakerIcon className="h-3 w-3 mr-1" />
+                                                  {instrumentsByGroup[group]?.length || 0}
+                                                </Badge>
+                                              </CardTitle>
+                                              <p className="text-xs text-muted-foreground mt-1">
+                                                Drag to add to workflow
+                                              </p>
+                                            </div>
+                                          </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => addGroupToCanvas(group)}
+                                          >
+                                            <PlusIcon className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      </CardHeader>
+                                      <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="absolute inset-0 bg-primary/5 border-2 border-dashed border-primary/20 rounded-lg" />
+                                      </div>
+                                    </Card>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
                           )}
                         </div>
-                      )}
-                    </div>
-                  </ScrollArea>
+                      </ScrollArea>
+                    </>
+                  )}
                 </div>
               </ResizablePanel>
               <ResizableHandle withHandle>
@@ -761,64 +502,72 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
           )}
           
           <ResizablePanel defaultSize={showRightPanel ? 50 : 75}>
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              onNodeClick={onNodeClick}
-              nodeTypes={nodeTypes}
-              defaultEdgeOptions={edgeOptions}
-              minZoom={0.2}
-              maxZoom={2}
-              defaultZoom={1}
-              fitView
+            <div 
+              className="h-full w-full"
+              onDrop={onDrop}
+              onDragOver={onDragOver}
             >
-              <Background 
-                variant="dots"
-                gap={12}
-                size={1}
-                color="hsl(var(--muted-foreground))"
-                className="opacity-5"
-              />
-              <Controls 
-                className="bg-background/80 backdrop-blur-sm border rounded-lg p-2"
-                showInteractive={false}
-              />
-              <MiniMap 
-                nodeColor={(node) => {
-                  switch (node.data?.taskType) {
-                    case 'instrument': return 'hsl(var(--primary))';
-                    default: return 'hsl(var(--muted-foreground))';
-                  }
-                }}
-                maskColor="rgba(0, 0, 0, 0.1)"
-                className="bg-background/80 backdrop-blur-sm rounded-lg"
-              />
-              
-              <Panel position="top-right" className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={handleZoomOut}>
-                  <MinusIcon className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={handleZoomIn}>
-                  <PlusIcon className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => setShowLeftPanel(!showLeftPanel)}>
-                  {showLeftPanel ? <PanelLeftIcon className="h-4 w-4" /> : <PanelRightIcon className="h-4 w-4" />}
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => setShowRightPanel(!showRightPanel)}>
-                  <FileJsonIcon className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={handleSave}>
-                  <SaveIcon className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" onClick={handleStartRun}>
-                  <PlayIcon className="h-4 w-4 mr-2" />
-                  Run
-                </Button>
-              </Panel>
-            </ReactFlow>
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onNodeClick={onNodeClick}
+                onPaneClick={onPaneClick}
+                nodeTypes={nodeTypes}
+                defaultEdgeOptions={edgeOptions}
+                minZoom={0.2}
+                maxZoom={2}
+                defaultZoom={1}
+                fitView
+              >
+                <Background 
+                  variant="dots"
+                  gap={24}
+                  size={2}
+                  color="hsl(var(--muted-foreground))"
+                  className="opacity-5"
+                />
+                <Background 
+                  variant="lines"
+                  gap={96}
+                  size={1}
+                  color="hsl(var(--muted-foreground))"
+                  className="opacity-[0.075]"
+                  offset={1}
+                />
+                <Controls 
+                  className="bg-background/80 backdrop-blur-sm border rounded-lg p-2"
+                  showInteractive={false}
+                />
+                <MiniMap 
+                  nodeColor={(node) => {
+                    switch (node.data?.taskType) {
+                      case 'instrument': return 'hsl(var(--primary))';
+                      default: return 'hsl(var(--muted-foreground))';
+                    }
+                  }}
+                  maskColor="rgba(0, 0, 0, 0.1)"
+                  className="bg-background/80 backdrop-blur-sm rounded-lg"
+                />
+                
+                <Panel position="top-right" className="flex gap-2">
+                  <Button variant="outline" size="icon" onClick={handleZoomOut}>
+                    <MinusIcon className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={handleZoomIn}>
+                    <PlusIcon className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={() => setShowLeftPanel(!showLeftPanel)}>
+                    {showLeftPanel ? <PanelLeftIcon className="h-4 w-4" /> : <PanelRightIcon className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={() => setShowRightPanel(!showRightPanel)}>
+                    <FileJsonIcon className="h-4 w-4" />
+                  </Button>
+                </Panel>
+              </ReactFlow>
+            </div>
           </ResizablePanel>
 
           {showRightPanel && (
@@ -826,20 +575,15 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
               <ResizableHandle withHandle>
                 <GripVerticalIcon className="h-4 w-4" />
               </ResizableHandle>
-              <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+              <ResizablePanel defaultSize={25}>
                 <div className="h-full border-l">
                   <div className="p-4 border-b bg-card">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-lg font-semibold">Flow JSON</h2>
-                      <Button variant="ghost" size="icon" onClick={() => setShowRightPanel(false)}>
-                        <XIcon className="h-4 w-4" />
-                      </Button>
-                    
-                    </div>
+                    <h2 className="text-lg font-semibold">Workflow JSON</h2>
+                    <p className="text-sm text-muted-foreground">Current workflow configuration</p>
                   </div>
                   <ScrollArea className="h-[calc(100vh-16rem)]">
-                    <pre className="p-4 text-xs font-mono whitespace-pre-wrap">
-                      {jsonOutput}
+                    <pre className="p-4 text-xs">
+                      {JSON.stringify(getWorkflowJson(), null, 2)}
                     </pre>
                   </ScrollArea>
                 </div>
