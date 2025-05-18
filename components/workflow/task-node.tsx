@@ -343,13 +343,17 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                         <>
                                           <BeakerIcon className="h-3 w-3 mr-1" />
                                           {instrument.instruments[config.instrumentId]?.driver.name}
-                                          <span className="mx-1">•</span>
-                                          Slot {config.slot}
+                                          {config.slot > 0 && (
+                                            <>
+                                              <span className="mx-1">•</span>
+                                              Slot {config.slot}
+                                            </>
+                                          )}
                                         </>
                                       ) : (
                                         <>
                                           <MoveIcon className="h-3 w-3 mr-1" />
-                                          Slot {config.slot}
+                                          {config.slot > 0 && `Slot ${config.slot}`}
                                         </>
                                       )}
                                     </Badge>
