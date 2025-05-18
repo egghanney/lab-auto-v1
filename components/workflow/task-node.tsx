@@ -30,10 +30,7 @@ import {
 interface LabwareConfig {
   type: string;
   slot: number;
-  startingLocation: {
-    instrumentId: string;
-    slot: number;
-  };
+  instrumentId: string;
 }
 
 interface TaskNodeProps extends NodeProps {
@@ -69,10 +66,7 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
     return (labwareConfig[taskName]?.[labwareId]) || {
       type: labwareOptions.find(l => l.id === labwareId)?.type || '',
       slot: 1,
-      startingLocation: {
-        instrumentId: '',
-        slot: 1
-      }
+      instrumentId: ''
     };
   };
 
@@ -294,18 +288,13 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                         <ScrollArea className="h-[300px]">
                                           <div className="space-y-4 py-4">
                                             <div className="space-y-2">
-                                              <Label>Starting Location</Label>
+                                              <Label>Instrument</Label>
                                               <Select
-                                                value={config.startingLocation.instrumentId}
+                                                value={config.instrumentId}
                                                 onValueChange={(value) => handleConfigUpdate(
                                                   taskName,
                                                   labwareId,
-                                                  { 
-                                                    startingLocation: {
-                                                      ...config.startingLocation,
-                                                      instrumentId: value
-                                                    }
-                                                  }
+                                                  { instrumentId: value }
                                                 )}
                                               >
                                                 <SelectTrigger>
@@ -320,38 +309,18 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                                 </SelectContent>
                                               </Select>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                              <div className="space-y-2">
-                                                <Label>Starting Slot</Label>
-                                                <Input
-                                                  type="number"
-                                                  value={config.startingLocation.slot}
-                                                  onChange={(e) => handleConfigUpdate(
-                                                    taskName,
-                                                    labwareId,
-                                                    { 
-                                                      startingLocation: {
-                                                        ...config.startingLocation,
-                                                        slot: parseInt(e.target.value)
-                                                      }
-                                                    }
-                                                  )}
-                                                  min={1}
-                                                />
-                                              </div>
-                                              <div className="space-y-2">
-                                                <Label>Task Slot</Label>
-                                                <Input
-                                                  type="number"
-                                                  value={config.slot}
-                                                  onChange={(e) => handleConfigUpdate(
-                                                    taskName,
-                                                    labwareId,
-                                                    { slot: parseInt(e.target.value) }
-                                                  )}
-                                                  min={1}
-                                                />
-                                              </div>
+                                            <div className="space-y-2">
+                                              <Label>Slot</Label>
+                                              <Input
+                                                type="number"
+                                                value={config.slot}
+                                                onChange={(e) => handleConfigUpdate(
+                                                  taskName,
+                                                  labwareId,
+                                                  { slot: parseInt(e.target.value) }
+                                                )}
+                                                min={1}
+                                              />
                                             </div>
                                           </div>
                                         </ScrollArea>
@@ -369,16 +338,16 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                 </div>
                                 {config && (
                                   <div className="mt-1 flex flex-wrap gap-1">
+                                    {config.instrumentId && (
+                                      <Badge variant="outline" className="text-xs justify-start">
+                                        <BeakerIcon className="h-3 w-3 mr-1" />
+                                        {instrument.instruments[config.instrumentId]?.driver.name}
+                                      </Badge>
+                                    )}
                                     <Badge variant="outline" className="text-xs justify-start">
                                       <MoveIcon className="h-3 w-3 mr-1" />
                                       Slot {config.slot}
                                     </Badge>
-                                    {config.startingLocation.instrumentId && (
-                                      <Badge variant="outline" className="text-xs justify-start">
-                                        <BeakerIcon className="h-3 w-3 mr-1" />
-                                        {instrument.instruments[config.startingLocation.instrumentId]?.driver.name} (Slot {config.startingLocation.slot})
-                                      </Badge>
-                                    )}
                                   </div>
                                 )}
                               </div>
