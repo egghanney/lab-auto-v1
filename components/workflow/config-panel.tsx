@@ -104,7 +104,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
           <Badge variant="outline" className="px-2 py-1">
             {instrument.group}
           </Badge>
-          <h2 className="text-sm font-medium">Configure Node</h2>
+          <h2 className="text-sm font-medium">Configure</h2>
         </div>
         {onBackToInstruments && (
           <Button 
