@@ -114,7 +114,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
             className="text-muted-foreground hover:text-foreground gap-1.5"
           >
             <ArrowLeftIcon className="h-4 w-4" />
-            Back
+            
           </Button>
         )}
       </div>
