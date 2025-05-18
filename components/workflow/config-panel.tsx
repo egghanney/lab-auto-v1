@@ -37,6 +37,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
 
   const { data } = selectedNode;
   const { instrument, selectedTasks = [], selectedLabware = {}, labwareConfig = {} } = data;
+  const availableTasks = instrument.driver.tasks || [];
 
   const handleLabwareConfigChange = (taskName: string, labwareId: string, updates: any) => {
     const currentConfig = labwareConfig[taskName]?.[labwareId] || {};
@@ -133,21 +134,62 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
           <ScrollArea className="h-[calc(100vh-16rem)]">
             <TabsContent value="tasks" className="p-4 space-y-4">
               <div className="space-y-2">
-                {selectedTasks.map(taskName => (
-                  <Card key={taskName}>
+                {availableTasks.map(task => (
+                  <Card
+                    key={task.name}
+                    draggable
+                    onDragStart={(e) => onDragStart(e, task, 'task')}
+                    onDragEnd={onDragEnd}
+                    className={cn(
+                      "relative transition-all duration-200 cursor-move group",
+                      selectedTasks.includes(task.name) && "bg-muted",
+                      draggedItem === task.name && "opacity-50"
+                    )}
+                  >
                     <CardHeader className="py-3">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm">{taskName}</CardTitle>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary transition-transform group-hover:scale-110">
+                            <MoveIcon className="h-5 w-5 group-hover:animate-pulse" />
+                          </div>
+                          <CardTitle className="text-sm">{task.name}</CardTitle>
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemoveTask(taskName)}
-                          className="text-destructive"
+                          onClick={() => selectedTasks.includes(task.name) 
+                            ? handleRemoveTask(task.name)
+                            : handleAddTask(task.name)
+                          }
+                          className={selectedTasks.includes(task.name) ? 'text-destructive' : ''}
                         >
-                          <XIcon className="h-4 w-4" />
+                          {selectedTasks.includes(task.name) ? (
+                            <XIcon className="h-4 w-4" />
+                          ) : (
+                            <PlusIcon className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
                     </CardHeader>
+                    <CardContent className="py-2">
+                      <p className="text-sm text-muted-foreground">{task.description}</p>
+                      {task.parameters.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {task.parameters.map(param => (
+                            <Badge 
+                              key={param} 
+                              variant="secondary" 
+                              className="text-xs transition-colors hover:bg-primary/20"
+                            >
+                              {param}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                    <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute inset-0 border-2 border-dashed border-primary/20 rounded-lg" />
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -155,6 +197,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
 
             <TabsContent value="labware" className="p-4 space-y-4">
               {selectedTasks.map(taskName => {
+                const task = availableTasks.find(t => t.name === taskName);
                 const taskLabware = selectedLabware[taskName] || [];
                 const isOpen = openTasks[taskName];
 
