@@ -25,6 +25,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { labwareOptions } from '@/lib/types/labware';
 
 interface LabwareConfig {
   type: string;
