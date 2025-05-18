@@ -5,10 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BeakerIcon, TagIcon, PlusIcon, Settings2Icon, MoveIcon, ArrowLeftIcon } from 'lucide-react';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, MoveIcon, ArrowLeftIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -162,11 +163,10 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                           }
                           className={selectedTasks.includes(task.name) ? 'text-destructive' : ''}
                         >
-                          {selectedTasks.includes(task.name) ? 'Remove' : (
-                            <>
-                              <PlusIcon className="h-4 w-4 mr-2" />
-                              Add
-                            </>
+                          {selectedTasks.includes(task.name) ? (
+                            <XIcon className="h-4 w-4" />
+                          ) : (
+                            <PlusIcon className="h-4 w-4" />
                           )}
                         </Button>
                       </div>
@@ -257,11 +257,10 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                       }
                                     }}
                                   >
-                                    {taskLabware.includes(labware.id) ? 'Remove' : (
-                                      <>
-                                        <PlusIcon className="h-4 w-4 mr-2" />
-                                        Add
-                                      </>
+                                    {taskLabware.includes(labware.id) ? (
+                                      <XIcon className="h-4 w-4" />
+                                    ) : (
+                                      <PlusIcon className="h-4 w-4" />
                                     )}
                                   </Button>
                                   <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
@@ -310,7 +309,6 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                             <Dialog>
                                               <DialogTrigger asChild>
                                                 <Button variant="ghost" size="sm">
-                                                  <Settings2Icon className="h-4 w-4 mr-2" />
                                                   Configure
                                                 </Button>
                                               </DialogTrigger>
