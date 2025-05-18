@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, MoveIcon, ArrowLeftIcon } from 'lucide-react';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, MoveIcon, ArrowLeftIcon, Settings2Icon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -212,7 +212,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                         <CollapsibleTrigger asChild>
                           <div className="flex items-center justify-between cursor-pointer">
                             <div className="flex items-center gap-2">
-                              <GripIcon className="h-4 w-4" />
+                              <Settings2Icon className="h-4 w-4" />
                               <CardTitle className="text-sm">{taskName}</CardTitle>
                               <Badge variant="secondary">
                                 {taskLabware.length}
@@ -275,7 +275,10 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                               <>
                                 <Separator />
                                 <div className="space-y-2">
-                                  <h4 className="text-sm font-medium">Configured Labware</h4>
+                                  <h4 className="text-sm font-medium flex items-center gap-2">
+                                    <Settings2Icon className="h-4 w-4" />
+                                    Configured Labware
+                                  </h4>
                                   <div className="space-y-2 pb-4">
                                     {taskLabware.map(labwareId => {
                                       const labware = labwareOptions.find(l => l.id === labwareId);
@@ -307,7 +310,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                             <Dialog>
                                               <DialogTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                  <GripIcon className="h-4 w-4" />
+                                                  <Settings2Icon className="h-4 w-4" />
                                                 </Button>
                                               </DialogTrigger>
                                               <DialogContent>
