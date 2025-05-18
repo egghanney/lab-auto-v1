@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Node } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, MoveIcon, ArrowLeftIcon, Settings2Icon } from 'lucide-react';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, MoveIcon, ArrowLeftIcon, Settings2Icon, ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -212,7 +212,11 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                         <CollapsibleTrigger asChild>
                           <div className="flex items-center justify-between cursor-pointer">
                             <div className="flex items-center gap-2">
-                              <Settings2Icon className="h-4 w-4" />
+                              {isOpen ? (
+                                <ChevronDownIcon className="h-4 w-4" />
+                              ) : (
+                                <ChevronRightIcon className="h-4 w-4" />
+                              )}
                               <CardTitle className="text-sm">{taskName}</CardTitle>
                               <Badge variant="secondary">
                                 {taskLabware.length}
@@ -276,7 +280,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                 <Separator />
                                 <div className="space-y-2">
                                   <h4 className="text-sm font-medium flex items-center gap-2">
-                                    <Settings2Icon className="h-4 w-4" />
+                                    <ChevronDownIcon className="h-4 w-4" />
                                     Configured Labware
                                   </h4>
                                   <div className="space-y-2 pb-4">
@@ -309,8 +313,8 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                           <div className="flex items-center gap-2">
                                             <Dialog>
                                               <DialogTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                  <Settings2Icon className="h-4 w-4" />
+                                                <Button variant="ghost" size="icon" className="h-6 w-6">
+                                                  <Settings2Icon className="h-3 w-3" />
                                                 </Button>
                                               </DialogTrigger>
                                               <DialogContent>
@@ -360,9 +364,9 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                               variant="ghost"
                                               size="icon"
                                               onClick={() => handleRemoveLabware(taskName, labwareId)}
-                                              className="h-8 w-8 text-destructive"
+                                              className="h-6 w-6 text-destructive"
                                             >
-                                              <XIcon className="h-4 w-4" />
+                                              <XIcon className="h-3 w-3" />
                                             </Button>
                                           </div>
                                         </div>
