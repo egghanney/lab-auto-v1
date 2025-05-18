@@ -355,13 +355,16 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                                     <Label>Slot</Label>
                                                     <Input
                                                       type="number"
-                                                      value={config.slot}
-                                                      onChange={(e) => handleLabwareConfigChange(
-                                                        taskName,
-                                                        labwareId,
-                                                        { slot: parseInt(e.target.value) }
-                                                      )}
-                                                      min={1}
+                                                      value={config.slot || ''}
+                                                      onChange={(e) => {
+                                                        const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                                        handleLabwareConfigChange(
+                                                          taskName,
+                                                          labwareId,
+                                                          { slot: value }
+                                                        );
+                                                      }}
+                                                      min={0}
                                                     />
                                                   </div>
                                                 </div>
