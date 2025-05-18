@@ -8,12 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, ThermometerIcon, ShieldIcon, Settings2Icon, ChevronDownIcon, ChevronRightIcon, MoveIcon, ArrowLeftIcon } from 'lucide-react';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, MoveIcon, ArrowLeftIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ConfigPanelProps {
   selectedNode: Node | null;
@@ -114,7 +114,6 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
             className="text-muted-foreground hover:text-foreground gap-1.5"
           >
             <ArrowLeftIcon className="h-4 w-4" />
-            
           </Button>
         )}
       </div>
@@ -213,11 +212,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                         <CollapsibleTrigger asChild>
                           <div className="flex items-center justify-between cursor-pointer">
                             <div className="flex items-center gap-2">
-                              {isOpen ? (
-                                <ChevronDownIcon className="h-4 w-4" />
-                              ) : (
-                                <ChevronRightIcon className="h-4 w-4" />
-                              )}
+                              <GripIcon className="h-4 w-4" />
                               <CardTitle className="text-sm">{taskName}</CardTitle>
                               <Badge variant="secondary">
                                 {taskLabware.length}
@@ -286,8 +281,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                       const labware = labwareOptions.find(l => l.id === labwareId);
                                       const config = labwareConfig[taskName]?.[labwareId] || {
                                         slot: 1,
-                                        temperature: 25,
-                                        isSealed: false
+                                        instrumentId: ''
                                       };
 
                                       return (
@@ -296,16 +290,16 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                             <div>
                                               <p className="text-sm font-medium">{labware?.name}</p>
                                               <div className="flex gap-1 mt-1">
-                                                <Badge variant="outline" className="text-xs">
-                                                  <ThermometerIcon className="h-3 w-3 mr-1" />
-                                                  {config.temperature}°C
-                                                </Badge>
-                                                {config.isSealed && (
+                                                {config.instrumentId && (
                                                   <Badge variant="outline" className="text-xs">
-                                                    <ShieldIcon className="h-3 w-3 mr-1" />
-                                                    Sealed
+                                                    <BeakerIcon className="h-3 w-3 mr-1" />
+                                                    {instrument.instruments[config.instrumentId]?.driver.name}
                                                   </Badge>
                                                 )}
+                                                <Badge variant="outline" className="text-xs">
+                                                  <MoveIcon className="h-3 w-3 mr-1" />
+                                                  Slot {config.slot}
+                                                </Badge>
                                               </div>
                                             </div>
                                           </div>
@@ -313,7 +307,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                             <Dialog>
                                               <DialogTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                  <Settings2Icon className="h-4 w-4" />
+                                                  <GripIcon className="h-4 w-4" />
                                                 </Button>
                                               </DialogTrigger>
                                               <DialogContent>
@@ -321,42 +315,39 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                                   <DialogTitle>Configure {labware?.name}</DialogTitle>
                                                 </DialogHeader>
                                                 <div className="space-y-4 py-4">
-                                                  <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                      <Label>Slot</Label>
-                                                      <Input
-                                                        type="number"
-                                                        min={1}
-                                                        value={config.slot}
-                                                        onChange={(e) => handleLabwareConfigChange(
-                                                          taskName,
-                                                          labwareId,
-                                                          { slot: parseInt(e.target.value) }
-                                                        )}
-                                                      />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                      <Label>Temperature (°C)</Label>
-                                                      <Input
-                                                        type="number"
-                                                        value={config.temperature}
-                                                        onChange={(e) => handleLabwareConfigChange(
-                                                          taskName,
-                                                          labwareId,
-                                                          { temperature: parseInt(e.target.value) }
-                                                        )}
-                                                      />
-                                                    </div>
-                                                  </div>
-                                                  <div className="flex items-center justify-between">
-                                                    <Label>Sealed</Label>
-                                                    <Switch
-                                                      checked={config.isSealed}
-                                                      onCheckedChange={(checked) => handleLabwareConfigChange(
+                                                  <div className="space-y-2">
+                                                    <Label>Instrument</Label>
+                                                    <Select
+                                                      value={config.instrumentId}
+                                                      onValueChange={(value) => handleLabwareConfigChange(
                                                         taskName,
                                                         labwareId,
-                                                        { isSealed: checked }
+                                                        { instrumentId: value }
                                                       )}
+                                                    >
+                                                      <SelectTrigger>
+                                                        <SelectValue placeholder="Select instrument" />
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                        {Object.entries(instrument.instruments).map(([id, inst]: [string, any]) => (
+                                                          <SelectItem key={id} value={id}>
+                                                            {inst.driver.name}
+                                                          </SelectItem>
+                                                        ))}
+                                                      </SelectContent>
+                                                    </Select>
+                                                  </div>
+                                                  <div className="space-y-2">
+                                                    <Label>Slot</Label>
+                                                    <Input
+                                                      type="number"
+                                                      value={config.slot}
+                                                      onChange={(e) => handleLabwareConfigChange(
+                                                        taskName,
+                                                        labwareId,
+                                                        { slot: parseInt(e.target.value) }
+                                                      )}
+                                                      min={1}
                                                     />
                                                   </div>
                                                 </div>
