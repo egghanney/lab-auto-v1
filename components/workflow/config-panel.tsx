@@ -280,7 +280,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                 <Separator />
                                 <div className="space-y-2">
                                   <h4 className="text-sm font-medium flex items-center gap-2">
-                                    <Settings2Icon className="h-4 w-4" />
+                                    <className="h-4 w-4" />
                                     Configured Labware
                                   </h4>
                                   <div className="space-y-2 pb-4">
