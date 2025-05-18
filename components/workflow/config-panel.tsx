@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, MoveIcon, ArrowLeftIcon, Settings2Icon, ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
@@ -278,7 +279,8 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                               <>
                                 <Separator />
                                 <div className="space-y-2">
-                                  <h4 className="text-sm font-medium">
+                                  <h4 className="text-sm font-medium flex items-center gap-2">
+                                    <ChevronDownIcon className="h-4 w-4" />
                                     Configured Labware
                                   </h4>
                                   <div className="space-y-2 pb-4">
