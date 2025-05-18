@@ -3,7 +3,7 @@ import { Node } from 'reactflow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Label } from '../ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -280,7 +280,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                 <Separator />
                                 <div className="space-y-2">
                                   <h4 className="text-sm font-medium flex items-center gap-2">
-                                    <ChevronDownIcon className="h-4 w-4" />
+                                    <Settings2Icon className="h-4 w-4" />
                                     Configured Labware
                                   </h4>
                                   <div className="space-y-2 pb-4">
@@ -296,18 +296,25 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                           <div className="flex items-center gap-2">
                                             <div>
                                               <p className="text-sm font-medium">{labware?.name}</p>
-                                              <div className="flex gap-1 mt-1">
-                                                {config.instrumentId && (
-                                                  <Badge variant="outline" className="text-xs">
+                                              <Badge variant="outline" className="mt-1 text-xs">
+                                                {config.instrumentId ? (
+                                                  <>
                                                     <BeakerIcon className="h-3 w-3 mr-1" />
                                                     {instrument.instruments[config.instrumentId]?.driver.name}
-                                                  </Badge>
+                                                    {config.slot > 0 && (
+                                                      <>
+                                                        <span className="mx-1">•</span>
+                                                        Slot {config.slot}
+                                                      </>
+                                                    )}
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <MoveIcon className="h-3 w-3 mr-1" />
+                                                    {config.slot > 0 && `Slot ${config.slot}`}
+                                                  </>
                                                 )}
-                                                <Badge variant="outline" className="text-xs">
-                                                  <MoveIcon className="h-3 w-3 mr-1" />
-                                                  Slot {config.slot}
-                                                </Badge>
-                                              </div>
+                                              </Badge>
                                             </div>
                                           </div>
                                           <div className="flex items-center gap-2">
