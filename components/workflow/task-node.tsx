@@ -337,16 +337,21 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                   </div>
                                 </div>
                                 {config && (
-                                  <div className="mt-1 flex flex-wrap gap-1">
-                                    {config.instrumentId && (
-                                      <Badge variant="outline" className="text-xs justify-start">
-                                        <BeakerIcon className="h-3 w-3 mr-1" />
-                                        {instrument.instruments[config.instrumentId]?.driver.name}
-                                      </Badge>
-                                    )}
+                                  <div className="mt-1">
                                     <Badge variant="outline" className="text-xs justify-start">
-                                      <MoveIcon className="h-3 w-3 mr-1" />
-                                      Slot {config.slot}
+                                      {config.instrumentId ? (
+                                        <>
+                                          <BeakerIcon className="h-3 w-3 mr-1" />
+                                          {instrument.instruments[config.instrumentId]?.driver.name}
+                                          <span className="mx-1">•</span>
+                                          Slot {config.slot}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <MoveIcon className="h-3 w-3 mr-1" />
+                                          Slot {config.slot}
+                                        </>
+                                      )}
                                     </Badge>
                                   </div>
                                 )}
