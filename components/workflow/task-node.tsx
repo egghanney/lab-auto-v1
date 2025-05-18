@@ -1,5 +1,3 @@
-'use client';
-
 import { Handle, NodeProps, Position } from 'reactflow';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
@@ -13,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
   DropdownMenuGroup,
-} from '../ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import { labwareOptions } from '@/lib/types/labware';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Input } from '../ui/input';
