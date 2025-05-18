@@ -14,6 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuGroup,
 } from '../ui/dropdown-menu';
+import { labwareOptions } from '@/lib/types/labware';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -25,12 +26,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { labwareOptions } from '@/lib/types/labware';
 
 interface LabwareConfig {
   type: string;
   slot: number;
-  instrumentId: string;
+  startingLocation: {
+    instrumentId: string;
+    slot: number;
+  };
 }
 
 interface TaskNodeProps extends NodeProps {
@@ -66,7 +69,10 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
     return (labwareConfig[taskName]?.[labwareId]) || {
       type: labwareOptions.find(l => l.id === labwareId)?.type || '',
       slot: 1,
-      instrumentId: ''
+      startingLocation: {
+        instrumentId: '',
+        slot: 1
+      }
     };
   };
 
@@ -277,60 +283,87 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                   <div className="flex items-center gap-1">
                                     <Dialog>
                                       <DialogTrigger asChild>
-                                        <Button variant="ghost" size="sm">
-                                          Configure
+                                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                                          <Settings2Icon className="h-3 w-3" />
                                         </Button>
                                       </DialogTrigger>
                                       <DialogContent>
                                         <DialogHeader>
                                           <DialogTitle>Configure {labware?.name}</DialogTitle>
                                         </DialogHeader>
-                                        <div className="space-y-4 py-4">
-                                          <div className="space-y-2">
-                                            <Label>Instrument</Label>
-                                            <Select
-                                              value={config.instrumentId}
-                                              onValueChange={(value) => handleConfigUpdate(
-                                                taskName,
-                                                labwareId,
-                                                { instrumentId: value }
-                                              )}
-                                            >
-                                              <SelectTrigger>
-                                                <SelectValue placeholder="Select instrument" />
-                                              </SelectTrigger>
-                                              <SelectContent>
-                                                {Object.entries(instrument.instruments).map(([id, inst]: [string, any]) => (
-                                                  <SelectItem key={id} value={id}>
-                                                    {inst.driver.name}
-                                                  </SelectItem>
-                                                ))}
-                                              </SelectContent>
-                                            </Select>
+                                        <ScrollArea className="h-[300px]">
+                                          <div className="space-y-4 py-4">
+                                            <div className="space-y-2">
+                                              <Label>Starting Location</Label>
+                                              <Select
+                                                value={config.startingLocation.instrumentId}
+                                                onValueChange={(value) => handleConfigUpdate(
+                                                  taskName,
+                                                  labwareId,
+                                                  { 
+                                                    startingLocation: {
+                                                      ...config.startingLocation,
+                                                      instrumentId: value
+                                                    }
+                                                  }
+                                                )}
+                                              >
+                                                <SelectTrigger>
+                                                  <SelectValue placeholder="Select instrument" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  {Object.entries(instrument.instruments).map(([id, inst]: [string, any]) => (
+                                                    <SelectItem key={id} value={id}>
+                                                      {inst.driver.name}
+                                                    </SelectItem>
+                                                  ))}
+                                                </SelectContent>
+                                              </Select>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                              <div className="space-y-2">
+                                                <Label>Starting Slot</Label>
+                                                <Input
+                                                  type="number"
+                                                  value={config.startingLocation.slot}
+                                                  onChange={(e) => handleConfigUpdate(
+                                                    taskName,
+                                                    labwareId,
+                                                    { 
+                                                      startingLocation: {
+                                                        ...config.startingLocation,
+                                                        slot: parseInt(e.target.value)
+                                                      }
+                                                    }
+                                                  )}
+                                                  min={1}
+                                                />
+                                              </div>
+                                              <div className="space-y-2">
+                                                <Label>Task Slot</Label>
+                                                <Input
+                                                  type="number"
+                                                  value={config.slot}
+                                                  onChange={(e) => handleConfigUpdate(
+                                                    taskName,
+                                                    labwareId,
+                                                    { slot: parseInt(e.target.value) }
+                                                  )}
+                                                  min={1}
+                                                />
+                                              </div>
+                                            </div>
                                           </div>
-                                          <div className="space-y-2">
-                                            <Label>Slot</Label>
-                                            <Input
-                                              type="number"
-                                              value={config.slot}
-                                              onChange={(e) => handleConfigUpdate(
-                                                taskName,
-                                                labwareId,
-                                                { slot: parseInt(e.target.value) }
-                                              )}
-                                              min={1}
-                                            />
-                                          </div>
-                                        </div>
+                                        </ScrollArea>
                                       </DialogContent>
                                     </Dialog>
                                     <Button
                                       variant="ghost"
-                                      size="sm"
+                                      size="icon"
+                                      className="h-6 w-6 hover:text-destructive"
                                       onClick={() => handleLabwareRemove(taskName, labwareId)}
-                                      className="text-destructive"
                                     >
-                                      Remove
+                                      <XIcon className="h-3 w-3" />
                                     </Button>
                                   </div>
                                 </div>
@@ -340,10 +373,10 @@ export default function TaskNode({ data, isConnectable, selected }: TaskNodeProp
                                       <MoveIcon className="h-3 w-3 mr-1" />
                                       Slot {config.slot}
                                     </Badge>
-                                    {config.instrumentId && (
+                                    {config.startingLocation.instrumentId && (
                                       <Badge variant="outline" className="text-xs justify-start">
                                         <BeakerIcon className="h-3 w-3 mr-1" />
-                                        {instrument.instruments[config.instrumentId]?.driver.name}
+                                        {instrument.instruments[config.startingLocation.instrumentId]?.driver.name} (Slot {config.startingLocation.slot})
                                       </Badge>
                                     )}
                                   </div>

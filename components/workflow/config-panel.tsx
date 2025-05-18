@@ -8,8 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, MoveIcon, ArrowLeftIcon } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { BeakerIcon, TagIcon, PlusIcon, XIcon, GripIcon, ThermometerIcon, ShieldIcon, Settings2Icon, ChevronDownIcon, ChevronRightIcon, MoveIcon, ArrowLeftIcon } from 'lucide-react';
 import { labwareOptions } from '@/lib/types/labware';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -37,17 +37,10 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
 
   const { data } = selectedNode;
   const { instrument, selectedTasks = [], selectedLabware = {}, labwareConfig = {} } = data;
-  const availableTasks = instrument?.driver?.tasks || [];
+  const availableTasks = instrument.driver.tasks || [];
 
   const handleLabwareConfigChange = (taskName: string, labwareId: string, updates: any) => {
-    const currentConfig = labwareConfig[taskName]?.[labwareId] || {
-      slot: 1,
-      startingLocation: {
-        instrumentId: '',
-        slot: 1
-      }
-    };
-    
+    const currentConfig = labwareConfig[taskName]?.[labwareId] || {};
     onNodeUpdate(selectedNode.id, {
       ...data,
       labwareConfig: {
@@ -109,7 +102,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
       <div className="p-3 border-b bg-card flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="px-2 py-1">
-            {instrument?.group}
+            {instrument.group}
           </Badge>
           <h2 className="text-sm font-medium">Configure</h2>
         </div>
@@ -121,6 +114,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
             className="text-muted-foreground hover:text-foreground gap-1.5"
           >
             <ArrowLeftIcon className="h-4 w-4" />
+            
           </Button>
         )}
       </div>
@@ -180,7 +174,7 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                     </CardHeader>
                     <CardContent className="py-2">
                       <p className="text-sm text-muted-foreground">{task.description}</p>
-                      {task.parameters?.length > 0 && (
+                      {task.parameters.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {task.parameters.map(param => (
                             <Badge 
@@ -219,6 +213,11 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                         <CollapsibleTrigger asChild>
                           <div className="flex items-center justify-between cursor-pointer">
                             <div className="flex items-center gap-2">
+                              {isOpen ? (
+                                <ChevronDownIcon className="h-4 w-4" />
+                              ) : (
+                                <ChevronRightIcon className="h-4 w-4" />
+                              )}
                               <CardTitle className="text-sm">{taskName}</CardTitle>
                               <Badge variant="secondary">
                                 {taskLabware.length}
@@ -287,10 +286,8 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                       const labware = labwareOptions.find(l => l.id === labwareId);
                                       const config = labwareConfig[taskName]?.[labwareId] || {
                                         slot: 1,
-                                        startingLocation: {
-                                          instrumentId: '',
-                                          slot: 1
-                                        }
+                                        temperature: 25,
+                                        isSealed: false
                                       };
 
                                       return (
@@ -300,13 +297,13 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                               <p className="text-sm font-medium">{labware?.name}</p>
                                               <div className="flex gap-1 mt-1">
                                                 <Badge variant="outline" className="text-xs">
-                                                  <MoveIcon className="h-3 w-3 mr-1" />
-                                                  Slot {config.slot}
+                                                  <ThermometerIcon className="h-3 w-3 mr-1" />
+                                                  {config.temperature}°C
                                                 </Badge>
-                                                {config.startingLocation?.instrumentId && (
+                                                {config.isSealed && (
                                                   <Badge variant="outline" className="text-xs">
-                                                    <BeakerIcon className="h-3 w-3 mr-1" />
-                                                    {instrument?.instruments?.[config.startingLocation.instrumentId]?.driver?.name} (Slot {config.startingLocation.slot})
+                                                    <ShieldIcon className="h-3 w-3 mr-1" />
+                                                    Sealed
                                                   </Badge>
                                                 )}
                                               </div>
@@ -315,8 +312,8 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                           <div className="flex items-center gap-2">
                                             <Dialog>
                                               <DialogTrigger asChild>
-                                                <Button variant="ghost" size="sm">
-                                                  Configure
+                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                  <Settings2Icon className="h-4 w-4" />
                                                 </Button>
                                               </DialogTrigger>
                                               <DialogContent>
@@ -324,76 +321,54 @@ export default function ConfigPanel({ selectedNode, onNodeUpdate, onBackToInstru
                                                   <DialogTitle>Configure {labware?.name}</DialogTitle>
                                                 </DialogHeader>
                                                 <div className="space-y-4 py-4">
-                                                  <div className="space-y-2">
-                                                    <Label>Starting Location</Label>
-                                                    <Select
-                                                      value={config.startingLocation?.instrumentId || ''}
-                                                      onValueChange={(value) => handleLabwareConfigChange(
-                                                        taskName,
-                                                        labwareId,
-                                                        { 
-                                                          startingLocation: {
-                                                            ...config.startingLocation,
-                                                            instrumentId: value
-                                                          }
-                                                        }
-                                                      )}
-                                                    >
-                                                      <SelectTrigger>
-                                                        <SelectValue placeholder="Select instrument" />
-                                                      </SelectTrigger>
-                                                      <SelectContent>
-                                                        {Object.entries(instrument?.instruments || {}).map(([id, inst]: [string, any]) => (
-                                                          <SelectItem key={id} value={id}>
-                                                            {inst?.driver?.name}
-                                                          </SelectItem>
-                                                        ))}
-                                                      </SelectContent>
-                                                    </Select>
-                                                  </div>
                                                   <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
-                                                      <Label>Starting Slot</Label>
+                                                      <Label>Slot</Label>
                                                       <Input
                                                         type="number"
-                                                        value={config.startingLocation?.slot || 1}
-                                                        onChange={(e) => handleLabwareConfigChange(
-                                                          taskName,
-                                                          labwareId,
-                                                          { 
-                                                            startingLocation: {
-                                                              ...config.startingLocation,
-                                                              slot: parseInt(e.target.value)
-                                                            }
-                                                          }
-                                                        )}
                                                         min={1}
-                                                      />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                      <Label>Task Slot</Label>
-                                                      <Input
-                                                        type="number"
-                                                        value={config.slot || 1}
+                                                        value={config.slot}
                                                         onChange={(e) => handleLabwareConfigChange(
                                                           taskName,
                                                           labwareId,
                                                           { slot: parseInt(e.target.value) }
                                                         )}
-                                                        min={1}
                                                       />
                                                     </div>
+                                                    <div className="space-y-2">
+                                                      <Label>Temperature (°C)</Label>
+                                                      <Input
+                                                        type="number"
+                                                        value={config.temperature}
+                                                        onChange={(e) => handleLabwareConfigChange(
+                                                          taskName,
+                                                          labwareId,
+                                                          { temperature: parseInt(e.target.value) }
+                                                        )}
+                                                      />
+                                                    </div>
+                                                  </div>
+                                                  <div className="flex items-center justify-between">
+                                                    <Label>Sealed</Label>
+                                                    <Switch
+                                                      checked={config.isSealed}
+                                                      onCheckedChange={(checked) => handleLabwareConfigChange(
+                                                        taskName,
+                                                        labwareId,
+                                                        { isSealed: checked }
+                                                      )}
+                                                    />
                                                   </div>
                                                 </div>
                                               </DialogContent>
                                             </Dialog>
                                             <Button
                                               variant="ghost"
-                                              size="sm"
+                                              size="icon"
                                               onClick={() => handleRemoveLabware(taskName, labwareId)}
-                                              className="text-destructive"
+                                              className="h-8 w-8 text-destructive"
                                             >
-                                              Remove
+                                              <XIcon className="h-4 w-4" />
                                             </Button>
                                           </div>
                                         </div>
