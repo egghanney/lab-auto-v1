@@ -433,7 +433,12 @@ export default function WorkflowBuilder({ initialWorkflow, onSave }: WorkflowBui
                             <div className="space-y-4">
                               <Separator />
                               <div className="space-y-2">
-                                <label className="text-sm font-medium">Instrument Groups</label>
+                                <div className="flex items-center justify-between">
+                                  <label className="text-sm font-medium">Instrument Groups</label>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                                    <PlusIcon className="h-4 w-4" />
+                                  </Button>
+                                </div>
                                 <div className="space-y-2">
                                   {instrumentGroups.map(group => (
                                     <Card
