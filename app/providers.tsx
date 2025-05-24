@@ -1,21 +1,18 @@
-'use client';
+"use client";
 
-import { ThemeProvider } from "next-themes";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from "@/lib/auth/auth-provider";
-import { Toaster } from '@/components/ui/toaster';
+import { SessionProvider } from "next-auth/react";
+import { Toaster } from "@/components/ui/toaster";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children }: { readonly children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
-          <Toaster />
-        </ThemeProvider>
-      </AuthProvider>
+      <SessionProvider>
+        {children}
+        <Toaster />
+      </SessionProvider>
     </QueryClientProvider>
   );
 }

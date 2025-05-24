@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -86,8 +86,8 @@ export default function DashboardPage() {
               <PlusIcon className="h-4 w-4 mr-2" />
               New Workflow
             </Link>
-          </Button>
-        </div>
+        </Button>
+      </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="overview">
@@ -126,14 +126,14 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
+        <Card>
+          <CardHeader>
                 <CardTitle>Recent Runs</CardTitle>
-                <CardDescription>
+            <CardDescription>
                   Workflow execution history
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
                 <div className="space-y-4">
                   {recentRuns.map((run) => (
                     <div key={run.id} className="flex items-center justify-between">
@@ -155,17 +155,17 @@ export default function DashboardPage() {
                     <Link href="/dashboard/runs">View all runs</Link>
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader>
+        <Card>
+          <CardHeader>
                 <CardTitle>Workflow Activity</CardTitle>
                 <CardDescription>
                   Number of runs in the last 6 months
                 </CardDescription>
-              </CardHeader>
-              <CardContent>
+          </CardHeader>
+          <CardContent>
                 <div className="h-[200px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
@@ -192,8 +192,8 @@ export default function DashboardPage() {
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
-              </CardContent>
-            </Card>
+          </CardContent>
+        </Card>
           </div>
         </TabsContent>
         
@@ -218,15 +218,15 @@ export default function DashboardPage() {
               icon={<ListChecksIcon className="h-4 w-4 text-primary" />}
             />
           </div>
-          
-          <Card>
-            <CardHeader>
+
+        <Card>
+          <CardHeader>
               <CardTitle>Performance Metrics</CardTitle>
               <CardDescription>
                 Run times by workflow type
               </CardDescription>
-            </CardHeader>
-            <CardContent>
+          </CardHeader>
+          <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
@@ -247,20 +247,20 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
         </TabsContent>
-        
+
         <TabsContent value="usage" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
+        <Card>
+          <CardHeader>
                 <CardTitle>Instrument Usage</CardTitle>
                 <CardDescription>
                   Distribution of instrument usage
                 </CardDescription>
-              </CardHeader>
-              <CardContent>
+          </CardHeader>
+          <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -282,17 +282,17 @@ export default function DashboardPage() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
+          </CardContent>
+        </Card>
+
+          <Card>
+            <CardHeader>
                 <CardTitle>Workcell Utilization</CardTitle>
                 <CardDescription>
                   Operating time by workcell
                 </CardDescription>
-              </CardHeader>
-              <CardContent>
+            </CardHeader>
+            <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -313,9 +313,9 @@ export default function DashboardPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+            </CardContent>
+          </Card>
+      </div>
         </TabsContent>
       </Tabs>
     </div>
